@@ -1,56 +1,110 @@
-# Welcome to your Expo app 👋
+# IDali
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**IDali** is a mobile-based ID photo formatting, editing, and layout system built with **React Native and Expo**.
 
-## Get started
+It helps users prepare ID photos in one application by allowing them to capture or upload a photo, edit it, choose an ID size and paper size, adjust the background, and automatically generate a printable layout.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+* User Registration & Login
+* Dashboard
+* Profile
+* Capture or Upload Photo
+* Photo Editing
+* Background Adjustment
+* ID Photo Size Selection
+* Paper Size Selection
+* Automatic Layout Generation
+* Layout Preview
+* Save Layout
+* Export / Download
+* Layout History
+* Offline Local Storage
 
-2. Start the app
+## App Flow
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+Login / Register
+       ↓
+   Dashboard
+       ↓
+ Create ID Photo
+       ↓
+ Capture / Upload
+       ↓
+   Edit Photo
+       ↓
+ Select ID Size
+       ↓
+Adjust Background
+       ↓
+ Select Paper Size
+       ↓
+ Generate Layout
+       ↓
+    Preview
+       ↓
+ Save / Export / Download
+       ↓
+    History
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## How It Works
 
-### Other setup steps
+1. **Login/Register** – User creates an account or logs in.
+2. **Dashboard** – User accesses the main features.
+3. **Capture/Upload** – User takes a photo or selects one from the device.
+4. **Edit** – User prepares the photo using the available editing tools.
+5. **ID Size** – User selects the required ID photo size.
+6. **Background** – User adjusts or changes the photo background.
+7. **Paper Size** – User selects the paper size for the layout.
+8. **Generate** – IDali automatically arranges multiple copies of the photo.
+9. **Preview** – User checks the generated layout.
+10. **Save/Export** – User saves, exports, or downloads the final layout.
+11. **History** – Previously created layouts can be accessed again.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Architecture
 
-## Learn more
+```text
+                IDali Mobile App
+                       │
+                       ▼
+                React Native UI
+                       │
+                       ▼
+                Application Logic
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+          SQLite             Firebase
+        Local Data       Authentication
+        & History        Cloud Services
+              │
+              ▼
+       Generated Layout
+              │
+              ▼
+       Save / Export
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Technology Stack
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+* **React Native** – Mobile application
+* **Expo** – Development framework
+* **TypeScript** – Programming language
+* **Expo Router** – Navigation
+* **SQLite** – Local database and offline data
+* **Firebase** – Authentication / cloud services
+* **Git & GitHub** – Version control
 
-## Join the community
+## Project Goal
 
-Join our community of developers creating universal apps.
+IDali aims to make ID photo preparation easier by combining:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Capture → Edit → Format → Arrange → Preview → Save → Export**
+
+into one simple mobile application.
+
+## Status
+
+ **Currently in development**
