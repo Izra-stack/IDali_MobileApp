@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: login form layout and authentication actions.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -18,11 +19,8 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    width: 96,
+    height: 96,
   },
   title: {
     fontSize: 24,

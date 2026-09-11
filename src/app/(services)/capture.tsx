@@ -2,16 +2,18 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, FlashMode, useCameraPermissions } from 'expo-camera';
 import { useState, useRef } from 'react';
-import { SharedState } from '../../SharedState';
+import { persistSharedState, SharedState } from '../../SharedState';
 import styles from '../../styles/services/capture.styles';
 
+// Screen: camera capture and local photo handoff to the editor.
 export default function CaptureScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState('back');
-  const cameraRef = useRef(null);
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<FlashMode>('off');
+  const cameraRef = useRef<CameraView>(null);
 
   if (!permission) {
     return <View />;
@@ -26,17 +28,22 @@ export default function CaptureScreen() {
     );
   }
 
+  // Event handler: switch between front and rear cameras.
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  // API/event handler: capture a photo and open the editor.
   const handleCapture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      if (photo && photo.uri) {
+    try {
+      const photo = await cameraRef.current?.takePictureAsync();
+      if (photo?.uri) {
         SharedState.imageUri = photo.uri;
+        await persistSharedState();
         router.push('/(services)/editor');
       }
+    } catch {
+      // The camera mount and permission states provide the user-facing recovery path.
     }
   };
 
@@ -54,7 +61,7 @@ export default function CaptureScreen() {
         <Text style={styles.instructionText}>Position your face in the frame</Text>
         
         <View style={localStyles.cameraContainer}>
-          <CameraView style={localStyles.camera} facing={facing} ref={cameraRef}>
+          <CameraView style={localStyles.camera} facing={facing} flash={flash} ref={cameraRef}>
             <View style={localStyles.overlay}>
               <View style={localStyles.frame} />
             </View>
@@ -62,8 +69,12 @@ export default function CaptureScreen() {
         </View>
         
         <View style={styles.cameraControls}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="flash-outline" size={24} color="#374151" />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setFlash(current => (current === 'off' ? 'on' : 'off'))}
+            accessibilityLabel="Toggle flash"
+          >
+            <Ionicons name={flash === 'on' ? 'flash' : 'flash-outline'} size={24} color="#374151" />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>

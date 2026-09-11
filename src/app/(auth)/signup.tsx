@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth';
 import { auth } from '../../../firebase/config';
 import styles from '../../styles/auth/signup.styles';
 
@@ -17,6 +17,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // API handler: create the account, profile name, and verification email.
   const handleSignup = async () => {
     if (!agree) {
       Alert.alert('Terms & Privacy', 'Please accept the terms and privacy policy to continue.');
@@ -34,6 +35,7 @@ export default function SignupScreen() {
       await updateProfile(userCredential.user, {
         displayName: fullName
       });
+      await sendEmailVerification(userCredential.user);
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Signup Failed', error.message || 'Something went wrong');
@@ -134,10 +136,10 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Coming soon', 'Google sign-in is not enabled yet.')}>
               <Ionicons name="logo-google" size={24} color="#EA4335" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Coming soon', 'Apple sign-in is not enabled yet.')}>
               <Ionicons name="logo-apple" size={24} color="#000000" />
             </TouchableOpacity>
           </View>

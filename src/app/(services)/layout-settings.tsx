@@ -1,10 +1,12 @@
 ﻿import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { useDatabase } from '../../database/DatabaseProvider';
-import { SharedState } from '../../SharedState';
+import { persistSharedState, SharedState } from '../../SharedState';
+import { getLayoutPlan } from '../../database/queries';
 import styles from '../../styles/services/layout-settings.styles';
 
 export default function LayoutSettingsScreen() {
@@ -12,17 +14,25 @@ export default function LayoutSettingsScreen() {
   const db = useDatabase();
   
   const [idSizes, setIdSizes] = useState<{name: string, width_mm: number, height_mm: number}[]>([]);
-  const [idSize, setIdSize] = useState('2x2');
-  const [paperSize, setPaperSize] = useState('A4');
-  const [bgColor, setBgColor] = useState('White');
+  const [idSize, setIdSize] = useState(SharedState.idSize);
+  const [paperSize, setPaperSize] = useState(SharedState.paperSize);
+  const [bgColor, setBgColor] = useState(SharedState.bgColor);
+  // Derived data: recalculate the print grid whenever the user's choices change.
+  const layoutPlan = getLayoutPlan(idSize, paperSize);
+  const previewCount = Math.min(layoutPlan.copies, 60);
+  const photoWidthPercent = `${(layoutPlan.photoWidth / layoutPlan.paperWidth) * 100}%` as `${number}%`;
+  const photoGapPercent = `${(3 / layoutPlan.paperWidth) * 100}%` as `${number}%`;
+  const previewBackground = bgColor === 'Blue' ? '#dbeafe' : bgColor === 'Red' ? '#fee2e2' : bgColor === 'Transparent' ? '#e5e7eb' : '#ffffff';
 
+  // Effect: load ID dimensions from the local database once per screen mount.
   useEffect(() => {
     async function loadSizes() {
       try {
         const result = await db.getAllAsync('SELECT * FROM id_sizes');
         if (result && result.length > 0) {
           setIdSizes(result as any[]);
-          setIdSize((result[0] as any).name);
+          const currentSize = (result as any[]).some(size => size.name === SharedState.idSize) ? SharedState.idSize : (result[0] as any).name;
+          setIdSize(currentSize);
         } else {
           setIdSizes([
             { name: '1x1', width_mm: 25.4, height_mm: 25.4 },
@@ -37,10 +47,12 @@ export default function LayoutSettingsScreen() {
     loadSizes();
   }, []);
 
+  // Event handler: save layout choices before opening the final preview.
   const handleNext = () => {
     SharedState.idSize = idSize;
     SharedState.paperSize = paperSize;
     SharedState.bgColor = bgColor;
+    void persistSharedState();
     router.push('/(services)/preview');
   };
 
@@ -55,10 +67,39 @@ export default function LayoutSettingsScreen() {
       </View>
 
       <ScrollView style={styles.content}>
+        <View style={styles.previewCard}>
+          <Text style={styles.previewTitle}>Your layout preview</Text>
+          {SharedState.imageUri && (
+            <View style={styles.sourcePreviewRow}>
+              <Image source={{ uri: SharedState.imageUri }} style={styles.sourcePreviewPhoto} resizeMode="cover" resizeMethod="scale" fadeDuration={0} />
+              <View style={styles.sourcePreviewText}>
+                <Text style={styles.sourcePreviewTitle}>Selected photo</Text>
+                <Text style={styles.sourcePreviewHint}>This is the photo that will be repeated in the layout.</Text>
+              </View>
+            </View>
+          )}
+          <View
+            style={[styles.paperPreview, { backgroundColor: previewBackground, aspectRatio: layoutPlan.paperWidth / layoutPlan.paperHeight }]}
+          >
+            {SharedState.imageUri ? (
+              <View style={styles.previewGrid}>
+                {Array.from({ length: previewCount }, (_, index) => (
+                  <View key={index} style={{ width: photoWidthPercent, aspectRatio: layoutPlan.photoWidth / layoutPlan.photoHeight, marginRight: photoGapPercent, marginBottom: photoGapPercent }}>
+                    <Image source={{ uri: SharedState.imageUri }} style={styles.previewPhoto} resizeMode="cover" resizeMethod="scale" fadeDuration={0} />
+                  </View>
+                ))}
+              </View>
+            ) : <Ionicons name="image-outline" size={48} color="#9ca3af" />}
+          </View>
+          <Text style={styles.previewCaption}>{layoutPlan.columns} columns × {layoutPlan.rows} rows · {layoutPlan.copies} photos on {paperSize}</Text>
+          <Text style={styles.previewHint}>Preview updates automatically when you change the ID or paper size.</Text>
+        </View>
+
         <Text style={styles.title}>ID Size Selection</Text>
         <Text style={styles.subtitle}>Choose the dimensions for your ID photo</Text>
 
         <View style={styles.optionsContainer}>
+          {/* Conditional + loop: show database sizes or a loading message. */}
           {idSizes.length > 0 ? idSizes.map((sizeObj) => (
             <TouchableOpacity 
               key={sizeObj.name}
@@ -81,6 +122,7 @@ export default function LayoutSettingsScreen() {
         <Text style={[styles.title, {marginTop: 20}]}>Paper Size Selection</Text>
         <Text style={styles.subtitle}>Select the paper to print your layout</Text>
         <View style={styles.optionsContainer}>
+          {/* Loop: render supported paper-size choices. */}
           {['A4', '4R', 'Letter'].map((size) => (
             <TouchableOpacity 
               key={size}
@@ -97,6 +139,7 @@ export default function LayoutSettingsScreen() {
 
         <Text style={[styles.title, {marginTop: 20}]}>Background Color</Text>
         <View style={styles.colorGrid}>
+          {/* Loop: render supported background-color choices. */}
           {['White', 'Blue', 'Red', 'Transparent'].map((color) => (
             <TouchableOpacity 
               key={color}

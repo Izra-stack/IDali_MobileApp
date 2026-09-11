@@ -3,6 +3,7 @@ import { DatabaseProvider } from '../database/DatabaseProvider';
 import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
+  // Structure: provide the database and shared navigation stack to every route.
   return (
     <DatabaseProvider>
       <StatusBar style="dark" />

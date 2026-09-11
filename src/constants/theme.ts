@@ -2,6 +2,7 @@ import "@/global.css";
 
 import { Platform } from "react-native";
 
+// Data structure: application colors grouped by theme mode.
 export const Colors = {
   light: {
     text: "#000000",

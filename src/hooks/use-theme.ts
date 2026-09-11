@@ -6,6 +6,7 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+// Hook: resolve active theme colors for the current device mode.
 export function useTheme() {
   const scheme = useColorScheme();
   const theme = scheme === 'unspecified' ? 'light' : scheme;

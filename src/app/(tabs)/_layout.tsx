@@ -2,10 +2,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../../firebase/config';
 
 export default function TabLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // Effect: protect tab routes when the signed-in user logs out.
+  useEffect(() => {
+    return onAuthStateChanged(auth, user => {
+      if (!user) router.replace('/(auth)/login');
+    });
+  }, [router]);
   
   // Dynamically calculate the tab bar height based on the device's safe area bottom inset
   const bottomPadding = Math.max(insets.bottom, 8);

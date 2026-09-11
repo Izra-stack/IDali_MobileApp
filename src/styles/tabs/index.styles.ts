@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: dashboard layout and service cards.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -17,11 +18,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    width: 52,
+    height: 52,
   },
   profileButton: {},
   profileAvatar: {

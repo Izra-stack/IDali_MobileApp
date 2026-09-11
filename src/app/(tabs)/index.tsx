@@ -4,13 +4,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { auth } from '../../../firebase/config';
-import { SharedState } from '../../SharedState';
+import { persistSharedState, SharedState } from '../../SharedState';
 import styles from '../../styles/tabs/index.styles';
 
+// Screen: dashboard entry point for capture and gallery workflows.
 export default function DashboardScreen() {
   const router = useRouter();
   const user = auth.currentUser;
 
+  // API/event handler: pick a source image and open the editor.
   const handleUpload = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -20,6 +22,7 @@ export default function DashboardScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       SharedState.imageUri = result.assets[0].uri;
+      await persistSharedState();
       router.push('/(services)/editor');
     }
   };

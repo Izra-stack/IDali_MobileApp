@@ -2,6 +2,7 @@
 
 const { width } = Dimensions.get('window');
 
+// Styles: camera capture screen and controls.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

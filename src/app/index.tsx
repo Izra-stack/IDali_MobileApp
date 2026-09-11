@@ -1,27 +1,38 @@
 ﻿import { View, Text, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import styles from '../styles/index.styles';
+import { hydrateSharedState } from '../SharedState';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
 
+  // Effect: wait for Firebase and draft hydration before enabling Continue.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setTimeout(() => {
-        if (user) {
-          router.replace('/(tabs)');
-        } else {
-          router.replace('/(auth)/login');
-        }
-      }, 1500);
+    let mounted = true;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      await hydrateSharedState();
+      if (!mounted) return;
+      setUser(user);
+      setReady(true);
     });
 
-    return unsubscribe;
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
+
+  // Event handler: send the user to the correct authenticated route.
+  const continueToApp = () => {
+    router.replace(user ? '/(tabs)' : '/(auth)/login');
+  };
 
   return (
     <View style={styles.container}>
@@ -30,9 +41,10 @@ export default function SplashScreen() {
         style={styles.logo} 
         resizeMode="contain" 
       />
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading ...</Text>
-      </View>
+      <Text style={styles.welcomeText}>Your photo ID, made simple.</Text>
+      <TouchableOpacity style={[styles.continueButton, !ready && styles.continueButtonDisabled]} onPress={continueToApp} disabled={!ready} activeOpacity={0.85}>
+        <Text style={styles.continueButtonText}>Continue</Text>
+      </TouchableOpacity>
     </View>
   );
 }

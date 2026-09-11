@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: welcome screen layout and Continue action.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -12,16 +13,26 @@ const styles = StyleSheet.create({
     height: 120,
     marginBottom: 40,
   },
-  loadingContainer: {
-    backgroundColor: 'white',
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 20,
+  welcomeText: {
+    color: '#eaf1ff',
+    fontSize: 15,
+    marginBottom: 24,
   },
-  loadingText: {
+  continueButton: {
+    backgroundColor: '#ffffff',
+    minWidth: 180,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 28,
+    alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    opacity: 0.65,
+  },
+  continueButtonText: {
     color: '#3b74f6',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
   },
 });
 

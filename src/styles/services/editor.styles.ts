@@ -2,6 +2,7 @@
 
 const { width } = Dimensions.get('window');
 
+// Styles: photo editor workspace, tool strip, and controls.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -39,8 +40,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  contentContainer: {
+    paddingBottom: 24,
+  },
   imageWorkspace: {
-    flex: 1,
+    height: 360,
     margin: 24,
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -72,6 +76,9 @@ const styles = StyleSheet.create({
   },
   toolsScroll: {
     paddingHorizontal: 16,
+  },
+  toolsContent: {
+    paddingRight: 32,
   },
   toolItem: {
     alignItems: 'center',

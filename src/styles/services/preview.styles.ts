@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: final generated-layout preview and export actions.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -58,8 +59,8 @@ const styles = StyleSheet.create({
     color: '#166534',
   },
   resultImagePlaceholder: {
-    width: 200,
-    height: 280,
+    width: '100%',
+    maxWidth: 280,
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
     borderWidth: 1,
@@ -67,6 +68,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
+  },
+  previewGrid: {
+    width: '100%',
+    height: '100%',
+    padding: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignContent: 'center',
+    justifyContent: 'center',
+  },
+  previewPhoto: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 3,
   },
   noImageText: {
     marginTop: 12,

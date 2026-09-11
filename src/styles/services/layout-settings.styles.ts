@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: paper preview and layout-selection controls.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -38,6 +39,86 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginBottom: 24,
+  },
+  previewCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  sourcePreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  sourcePreviewPhoto: {
+    width: 64,
+    height: 78,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  sourcePreviewText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  sourcePreviewTitle: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sourcePreviewHint: {
+    marginTop: 4,
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  paperPreview: {
+    width: '100%',
+    borderRadius: 8,
+    padding: 10,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  previewGrid: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignContent: 'center',
+    justifyContent: 'center',
+  },
+  previewPhoto: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 3,
+  },
+  previewCaption: {
+    marginTop: 10,
+    color: '#6b7280',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  previewHint: {
+    marginTop: 4,
+    color: '#9ca3af',
+    fontSize: 11,
+    textAlign: 'center',
   },
   optionsContainer: {
     gap: 12,

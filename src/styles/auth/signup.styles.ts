@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: signup form layout and account creation actions.
 const styles = StyleSheet.create({
   container: {
     flex: 1,

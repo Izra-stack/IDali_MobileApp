@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../../firebase/config';
 import styles from '../../styles/auth/login.styles';
 
@@ -14,6 +14,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // API handler: authenticate the user with Firebase email/password.
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter email and password');
@@ -29,6 +30,20 @@ export default function LoginScreen() {
       Alert.alert('Login Failed', error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // API handler: send a password-reset email to the entered address.
+  const handlePasswordReset = async () => {
+    if (!email) {
+      Alert.alert('Password reset', 'Enter your email address first.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert('Check your email', 'A password reset link has been sent.');
+    } catch {
+      Alert.alert('Password reset failed', 'Check the email address and try again.');
     }
   };
 
@@ -77,6 +92,10 @@ export default function LoginScreen() {
             </View>
           </View>
 
+          <TouchableOpacity onPress={handlePasswordReset} style={{ alignSelf: 'flex-end', marginTop: 8 }}>
+            <Text style={styles.footerLink}>Forgot password?</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#ffffff" />
@@ -92,11 +111,11 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Coming soon', 'Google sign-in is not enabled yet.')}>
               <Ionicons name="logo-google" size={24} color="#EA4335" />
               <Text style={styles.socialButtonText}>Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Coming soon', 'Apple sign-in is not enabled yet.')}>
               <Ionicons name="logo-apple" size={24} color="#000000" />
               <Text style={styles.socialButtonText}>Apple</Text>
             </TouchableOpacity>

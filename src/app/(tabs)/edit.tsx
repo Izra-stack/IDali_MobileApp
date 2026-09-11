@@ -3,12 +3,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { SharedState } from '../../SharedState';
+import { persistSharedState, SharedState } from '../../SharedState';
 import styles from '../../styles/tabs/edit.styles';
 
+// Screen: choose an existing image before opening the editor.
 export default function EditTabScreen() {
   const router = useRouter();
 
+  // API/event handler: select an image from the device library.
   const handleUpload = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -18,6 +20,7 @@ export default function EditTabScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       SharedState.imageUri = result.assets[0].uri;
+      await persistSharedState();
       router.push('/(services)/editor');
     }
   };

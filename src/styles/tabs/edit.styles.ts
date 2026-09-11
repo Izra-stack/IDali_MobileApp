@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: image-selection tab layout.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

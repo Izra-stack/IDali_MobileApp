@@ -1,5 +1,6 @@
 ﻿import { StyleSheet } from 'react-native';
 
+// Styles: profile header, avatar, and account menu.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -39,6 +40,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    overflow: 'visible',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  avatarEditButton: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#3b74f6',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  changePhotoText: {
+    color: '#3b74f6',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: -6,
+    marginBottom: 18,
   },
   profileName: {
     fontSize: 20,
