@@ -21,7 +21,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 * Layout History
 * Offline Local Storage
 
-```
 
 ## How It Works
 
