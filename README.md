@@ -21,32 +21,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 * Layout History
 * Offline Local Storage
 
-## App Flow
-
-```text
-Login / Register
-       ↓
-   Dashboard
-       ↓
- Create ID Photo
-       ↓
- Capture / Upload
-       ↓
-   Edit Photo
-       ↓
- Select ID Size
-       ↓
-Adjust Background
-       ↓
- Select Paper Size
-       ↓
- Generate Layout
-       ↓
-    Preview
-       ↓
- Save / Export / Download
-       ↓
-    History
 ```
 
 ## How It Works
