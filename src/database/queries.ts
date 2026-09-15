@@ -67,6 +67,8 @@ export function getLayoutPlan(idSize: string, paperSize: string) {
   const gap = 3;
   const columns = Math.max(1, Math.floor((paperWidth - margin * 2 + gap) / (photoWidth + gap)));
   const rows = Math.max(1, Math.floor((paperHeight - margin * 2 + gap) / (photoHeight + gap)));
+  const marginX = (paperWidth - columns * photoWidth - (columns - 1) * gap) / 2;
+  const marginY = (paperHeight - rows * photoHeight - (rows - 1) * gap) / 2;
 
   return {
     photoWidth,
@@ -76,5 +78,8 @@ export function getLayoutPlan(idSize: string, paperSize: string) {
     columns,
     rows,
     copies: columns * rows,
+    marginX,
+    marginY,
+    gap,
   };
 }

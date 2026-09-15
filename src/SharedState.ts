@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Data structure: draft values shared between the editor workflow screens.
 export type EditorState = {
   imageUri: string;
+  brightness: number;
+  contrast: number;
   idSize: string;
   paperSize: string;
   bgColor: string;
@@ -11,6 +13,8 @@ export type EditorState = {
 // In-memory draft: screens update this object before persisting it.
 export const SharedState: EditorState = {
   imageUri: '',
+  brightness: 0,
+  contrast: 0,
   idSize: '2x2',
   paperSize: 'A4',
   bgColor: 'White',
@@ -42,6 +46,8 @@ export async function persistSharedState() {
 export async function clearSharedState() {
   Object.assign(SharedState, {
     imageUri: '',
+    brightness: 0,
+    contrast: 0,
     idSize: '2x2',
     paperSize: 'A4',
     bgColor: 'White',

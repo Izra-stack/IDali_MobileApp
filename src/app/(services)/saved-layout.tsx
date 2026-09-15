@@ -1,85 +1,53 @@
-import { View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useRef, useState } from 'react';
-import { captureRef } from 'react-native-view-shot';
+import { useEffect, useState, useRef } from 'react';
 import { File, Paths } from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { SharedState } from '../../SharedState';
 import { useDatabase } from '../../database/DatabaseProvider';
+import { getLayoutPlan, deleteLayout, SavedLayout } from '../../database/queries';
 import { auth } from '../../../firebase/config';
-import { getLayoutPlan, saveLayout } from '../../database/queries';
 import { PhotoSheet } from '../../components/PhotoSheet';
-import styles from '../../styles/services/preview.styles';
+import styles from '../../styles/services/saved-layout.styles';
 
-export default function PreviewScreen() {
+export default function SavedLayoutScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   const db = useDatabase();
-  const offscreenRef = useRef<View>(null);
-  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [layout, setLayout] = useState<SavedLayout | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  const imageUri = SharedState.imageUri;
-  const idSize = SharedState.idSize;
-  const paperSize = SharedState.paperSize;
-  const bgColor = SharedState.bgColor;
-  const plan = getLayoutPlan(idSize || '2x2', paperSize || 'A4');
+  const [exportModalVisible, setExportModalVisible] = useState(false);
 
-  const captureLayoutImage = async () => {
-    if (!offscreenRef.current) return null;
-    try {
-      return await captureRef(offscreenRef, {
-        format: 'png',
-        quality: 1,
-        result: 'tmpfile',
+  useEffect(() => {
+    if (id && auth.currentUser) {
+      db.getFirstAsync<SavedLayout>('SELECT * FROM layouts WHERE id = ? AND user_id = ?', Number(id), auth.currentUser.uid).then(res => {
+        if (res) {
+          setLayout(res);
+        } else {
+          Alert.alert('Error', 'Layout not found.');
+          router.back();
+        }
       });
-    } catch (e) {
-      console.error(e);
-      return null;
     }
-  };
+  }, [id, db]);
 
-  const handleSave = async () => {
-    if (!imageUri || !auth.currentUser) {
-      Alert.alert('Unable to save', 'Please select an image and sign in again.');
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      const uri = await captureLayoutImage();
-      let layoutUri = null;
-      if (uri) {
-        const filename = `layout_${Date.now()}.png`;
-        const destFile = new File(Paths.document, filename);
-        const sourceFile = new File(uri);
-        await sourceFile.copy(destFile);
-        layoutUri = destFile.uri;
-      }
-      
-      await saveLayout(db, {
-        user_id: auth.currentUser.uid,
-        photo_uri: imageUri,
-        id_size: idSize || '2x2',
-        paper_size: paperSize || 'A4',
-        background_color: bgColor || 'White',
-        layout_uri: layoutUri,
-      });
-      router.replace('/(tabs)');
-    } catch (e) {
-      Alert.alert('Save failed', 'The layout could not be saved locally.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  if (!layout) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ActivityIndicator size="large" color="#3b74f6" style={{ marginTop: 100 }} />
+      </SafeAreaView>
+    );
+  }
+
+  const plan = getLayoutPlan(layout.id_size, layout.paper_size);
 
   const generateHTML = async () => {
-    if (!imageUri) throw new Error('No image URI available');
+    if (!layout || !layout.photo_uri) throw new Error('No layout image URI available');
     let base64Image = '';
     try {
-      base64Image = await new File(imageUri).base64();
+      base64Image = await new File(layout.photo_uri).base64();
     } catch (e) {
       const err = e;
       throw new Error(`Base64 error: ${err && typeof err === 'object' && 'message' in err ? err.message : String(err)}`);
@@ -100,7 +68,7 @@ export default function PreviewScreen() {
       `;
     }
 
-    const bg = bgColor === 'Blue' ? '#eff6ff' : bgColor === 'Red' ? '#fef2f2' : '#f3f4f6';
+    const bg = layout.background_color === 'Blue' ? '#eff6ff' : layout.background_color === 'Red' ? '#fef2f2' : '#f3f4f6';
     return `
       <html>
         <head>
@@ -153,39 +121,55 @@ export default function PreviewScreen() {
     }
   };
 
-  const handleSaveToGallery = async () => {
-    setIsProcessing(true);
-    setExportModalVisible(false);
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Cannot save image without permission.');
-        return;
-      }
-      const uri = await captureLayoutImage();
-      if (!uri) throw new Error('Could not capture image');
-      await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert('Success', 'Layout saved to gallery!');
-    } catch (e) {
-      Alert.alert('Error', 'Could not save to gallery.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleShareImage = async () => {
     setIsProcessing(true);
     setExportModalVisible(false);
     try {
-      const uri = await captureLayoutImage();
-      if (!uri) throw new Error('Could not capture image');
+      if (!layout.layout_uri) throw new Error('No layout image saved.');
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+        await Sharing.shareAsync(layout.layout_uri);
       } else {
         Alert.alert('Error', 'Sharing is not available on this device.');
       }
     } catch (e) {
       Alert.alert('Error', 'Could not share image.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = () => {
+    Alert.alert('Delete layout?', 'This saved layout will be removed.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (auth.currentUser) {
+            await deleteLayout(db, layout.id, auth.currentUser.uid);
+            router.back();
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleReprint = async () => {
+    // Reprint logic - maybe just show PDF directly to print, or let them pick Printer?
+    setIsProcessing(true);
+    try {
+      const html = await generateHTML();
+      if (!html) throw new Error('HTML generation failed silently');
+      
+      const pointsPerMm = 72 / 25.4;
+      await Print.printAsync({ 
+        html,
+        width: plan.paperWidth * pointsPerMm,
+        height: plan.paperHeight * pointsPerMm
+      });
+    } catch (e) {
+      const err = e;
+      Alert.alert('Error', `Could not start printing: ${err && typeof err === 'object' && 'message' in err ? err.message : String(err)}`);
     } finally {
       setIsProcessing(false);
     }
@@ -197,40 +181,33 @@ export default function PreviewScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Layout Preview</Text>
-        <TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/(tabs)')}>
-          <Ionicons name="home-outline" size={24} color="#374151" />
+        <Text style={styles.headerTitle}>Saved Layout</Text>
+        <TouchableOpacity style={styles.homeButton} onPress={handleDelete}>
+          <Ionicons name="trash-outline" size={24} color="#dc2626" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
         <View style={styles.resultCard}>
-          <View style={styles.successHeader}>
-            <Ionicons name="checkmark-circle" size={28} color="#166534" style={{marginRight: 8}} />
-            <Text style={styles.resultTitle}>Layout Generated</Text>
-          </View>
-          
-          {imageUri ? (
-            <PhotoSheet
-              imageUri={imageUri}
-              plan={plan}
-              backgroundColor={bgColor === 'Blue' ? '#eff6ff' : bgColor === 'Red' ? '#fef2f2' : '#f3f4f6'}
-            />
+          {layout.layout_uri ? (
+             <Image source={{ uri: layout.layout_uri }} style={{ width: '100%', aspectRatio: plan.paperWidth / plan.paperHeight, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }} resizeMode="contain" />
           ) : (
-            <View style={[styles.resultImagePlaceholder, { backgroundColor: '#f3f4f6', aspectRatio: plan.paperWidth / plan.paperHeight }]}>
-              <Ionicons name="grid-outline" size={60} color="#d1d5db" />
-            </View>
+            <PhotoSheet
+              imageUri={layout.photo_uri}
+              plan={plan}
+              backgroundColor={layout.background_color === 'Blue' ? '#eff6ff' : layout.background_color === 'Red' ? '#fef2f2' : '#f3f4f6'}
+            />
           )}
-          <Text style={styles.noImageText}>Preview ({plan.columns} × {plan.rows} · {plan.copies} photos)</Text>
+          <Text style={styles.noImageText}>{layout.id_size} on {layout.paper_size}</Text>
           
           <View style={styles.resultButtons}>
-            <TouchableOpacity style={styles.retryButton} onPress={handleSave} disabled={isProcessing}>
+            <TouchableOpacity style={styles.retryButton} onPress={handleReprint} disabled={isProcessing}>
               {isProcessing ? (
                 <ActivityIndicator size="small" color="#3b74f6" />
               ) : (
                 <>
-                  <Ionicons name="save-outline" size={20} color="#3b74f6" style={{marginRight: 6}} />
-                  <Text style={styles.retryButtonText}>Save</Text>
+                  <Ionicons name="print-outline" size={20} color="#3b74f6" style={{marginRight: 6}} />
+                  <Text style={styles.retryButtonText}>Reprint</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -239,19 +216,6 @@ export default function PreviewScreen() {
               <Text style={styles.continueButtonText}>Export</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
-
-      <View style={{ position: 'absolute', top: -10000, left: -10000 }}>
-        <View ref={offscreenRef} collapsable={false}>
-          {imageUri && (
-            <PhotoSheet
-              imageUri={imageUri}
-              plan={plan}
-              backgroundColor={bgColor === 'Blue' ? '#eff6ff' : bgColor === 'Red' ? '#fef2f2' : '#f3f4f6'}
-              fixedWidth={plan.paperWidth * 10}
-            />
-          )}
         </View>
       </View>
 
@@ -265,11 +229,6 @@ export default function PreviewScreen() {
           <View style={{ backgroundColor: 'white', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Export Options</Text>
             
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }} onPress={handleSaveToGallery}>
-              <Ionicons name="image-outline" size={24} color="#374151" style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 16, color: '#111827' }}>Save to Gallery</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }} onPress={handleExportPDF}>
               <Ionicons name="document-text-outline" size={24} color="#374151" style={{ marginRight: 12 }} />
               <Text style={{ fontSize: 16, color: '#111827' }}>Export as PDF</Text>

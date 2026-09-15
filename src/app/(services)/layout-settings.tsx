@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useDatabase } from '../../database/DatabaseProvider';
 import { persistSharedState, SharedState } from '../../SharedState';
 import { getLayoutPlan } from '../../database/queries';
+import { PhotoSheet } from '../../components/PhotoSheet';
 import styles from '../../styles/services/layout-settings.styles';
 
 export default function LayoutSettingsScreen() {
@@ -19,9 +20,6 @@ export default function LayoutSettingsScreen() {
   const [bgColor, setBgColor] = useState(SharedState.bgColor);
   // Derived data: recalculate the print grid whenever the user's choices change.
   const layoutPlan = getLayoutPlan(idSize, paperSize);
-  const previewCount = Math.min(layoutPlan.copies, 60);
-  const photoWidthPercent = `${(layoutPlan.photoWidth / layoutPlan.paperWidth) * 100}%` as `${number}%`;
-  const photoGapPercent = `${(3 / layoutPlan.paperWidth) * 100}%` as `${number}%`;
   const previewBackground = bgColor === 'Blue' ? '#dbeafe' : bgColor === 'Red' ? '#fee2e2' : bgColor === 'Transparent' ? '#e5e7eb' : '#ffffff';
 
   // Effect: load ID dimensions from the local database once per screen mount.
@@ -78,19 +76,13 @@ export default function LayoutSettingsScreen() {
               </View>
             </View>
           )}
-          <View
-            style={[styles.paperPreview, { backgroundColor: previewBackground, aspectRatio: layoutPlan.paperWidth / layoutPlan.paperHeight }]}
-          >
-            {SharedState.imageUri ? (
-              <View style={styles.previewGrid}>
-                {Array.from({ length: previewCount }, (_, index) => (
-                  <View key={index} style={{ width: photoWidthPercent, aspectRatio: layoutPlan.photoWidth / layoutPlan.photoHeight, marginRight: photoGapPercent, marginBottom: photoGapPercent }}>
-                    <Image source={{ uri: SharedState.imageUri }} style={styles.previewPhoto} resizeMode="cover" resizeMethod="scale" fadeDuration={0} />
-                  </View>
-                ))}
-              </View>
-            ) : <Ionicons name="image-outline" size={48} color="#9ca3af" />}
-          </View>
+          {SharedState.imageUri ? (
+            <PhotoSheet imageUri={SharedState.imageUri} plan={layoutPlan} backgroundColor={previewBackground} />
+          ) : (
+            <View style={[styles.paperPreview, { backgroundColor: previewBackground, aspectRatio: layoutPlan.paperWidth / layoutPlan.paperHeight }]}>
+              <Ionicons name="image-outline" size={48} color="#9ca3af" />
+            </View>
+          )}
           <Text style={styles.previewCaption}>{layoutPlan.columns} columns × {layoutPlan.rows} rows · {layoutPlan.copies} photos on {paperSize}</Text>
           <Text style={styles.previewHint}>Preview updates automatically when you change the ID or paper size.</Text>
         </View>

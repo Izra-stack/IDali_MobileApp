@@ -1,4 +1,4 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -94,10 +94,10 @@ export default function HistoryScreen() {
           onRefresh={refreshLayouts}
           // Loop: FlatList renders one card for each saved layout.
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity style={styles.card} onPress={() => router.push(`/(services)/saved-layout?id=${item.id}`)}>
               <View style={styles.thumbnailFrame}>
                 <Image
-                  source={{ uri: item.photo_uri }}
+                  source={{ uri: item.layout_uri || item.photo_uri }}
                   style={styles.thumbnail}
                   resizeMode="cover"
                 />
@@ -131,7 +131,7 @@ export default function HistoryScreen() {
               >
                 <Ionicons name="trash-outline" size={20} color="#dc2626" />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
