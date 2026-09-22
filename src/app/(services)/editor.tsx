@@ -406,6 +406,18 @@ export default function EditorScreen() {
           )}
         </View>
 
+        <TouchableOpacity
+          style={styles.idSizeSetButton}
+          onPress={() => router.push("/id-size-set" as never)}
+          disabled={!imageUri}
+          accessibilityRole="button"
+          accessibilityLabel="Open ID Size Set"
+        >
+          <View style={styles.idSizeSetIcon}><Ionicons name="grid-outline" size={24} color="#ffffff" /></View>
+          <View style={{ flex: 1 }}><Text style={styles.idSizeSetTitle}>ID Size Set</Text><Text style={styles.idSizeSetSubtitle}>Choose a photo size and print package</Text></View>
+          <Ionicons name="chevron-forward" size={22} color="#2563eb" />
+        </TouchableOpacity>
+
         <View style={styles.toolsContainer}>
           <Text style={styles.toolsTitle}>Editing Tools</Text>
           <ScrollView

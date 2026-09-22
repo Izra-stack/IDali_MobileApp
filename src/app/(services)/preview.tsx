@@ -11,7 +11,7 @@ import * as Sharing from 'expo-sharing';
 import { SharedState } from '../../SharedState';
 import { useDatabase } from '../../database/DatabaseProvider';
 import { auth } from '../../../firebase/config';
-import { getLayoutPlan, saveLayout } from '../../database/queries';
+import { getPackagePlan, saveLayout } from '../../database/queries';
 import { PhotoSheet } from '../../components/PhotoSheet';
 import styles from '../../styles/services/preview.styles';
 
@@ -26,7 +26,7 @@ export default function PreviewScreen() {
   const idSize = SharedState.idSize;
   const paperSize = SharedState.paperSize;
   const bgColor = SharedState.bgColor;
-  const plan = getLayoutPlan(idSize || '2x2', paperSize || 'A4');
+  const plan = getPackagePlan(SharedState.packageId, idSize || '2x2 inches', paperSize || 'A4');
 
   const captureLayoutImage = async () => {
     if (!offscreenRef.current) return null;
@@ -65,6 +65,7 @@ export default function PreviewScreen() {
         id_size: idSize || '2x2',
         paper_size: paperSize || 'A4',
         background_color: bgColor || 'White',
+        package_id: SharedState.packageId || 'a4-package',
         layout_uri: layoutUri,
       });
       router.replace('/(tabs)');
@@ -87,14 +88,12 @@ export default function PreviewScreen() {
     const imgSrc = `data:image/jpeg;base64,${base64Image}`;
     
     let photosHtml = '';
-    const copies = Math.min(plan.copies, plan.columns * plan.rows);
-    for (let i = 0; i < copies; i++) {
-      const col = i % plan.columns;
-      const row = Math.floor(i / plan.columns);
-      const left = plan.marginX + col * (plan.photoWidth + plan.gap);
-      const top = plan.marginY + row * (plan.photoHeight + plan.gap);
+    const slots = (plan.slots ?? []).slice(0, plan.copies);
+    for (const slot of slots) {
+      const left = slot.left;
+      const top = slot.top;
       photosHtml += `
-        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${plan.photoWidth}mm; height: ${plan.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box;">
+        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${slot.photoWidth}mm; height: ${slot.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box;">
           <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: contain;" />
         </div>
       `;
@@ -221,7 +220,7 @@ export default function PreviewScreen() {
               <Ionicons name="grid-outline" size={60} color="#d1d5db" />
             </View>
           )}
-          <Text style={styles.noImageText}>Preview ({plan.columns} × {plan.rows} · {plan.copies} photos)</Text>
+          <Text style={styles.noImageText}>Preview ({plan.copies} photos · {paperSize || 'A4'} · {idSize || 'selected size'})</Text>
           
           <View style={styles.resultButtons}>
             <TouchableOpacity style={styles.retryButton} onPress={handleSave} disabled={isProcessing}>

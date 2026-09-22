@@ -6,6 +6,7 @@ export type EditorState = {
   brightness: number;
   contrast: number;
   idSize: string;
+  packageId: string;
   paperSize: string;
   bgColor: string;
 };
@@ -15,7 +16,8 @@ export const SharedState: EditorState = {
   imageUri: '',
   brightness: 0,
   contrast: 0,
-  idSize: '2x2',
+  idSize: '2x2 inches',
+  packageId: 'a4-package',
   paperSize: 'A4',
   bgColor: 'White',
 };
@@ -48,7 +50,8 @@ export async function clearSharedState() {
     imageUri: '',
     brightness: 0,
     contrast: 0,
-    idSize: '2x2',
+    idSize: '2x2 inches',
+    packageId: 'a4-package',
     paperSize: 'A4',
     bgColor: 'White',
   });

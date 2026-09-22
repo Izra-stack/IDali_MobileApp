@@ -92,23 +92,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 40,
+    gap: 10,
+    marginBottom: 28,
   },
   socialButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    gap: 9,
   },
   socialButtonText: {
-    display: 'none',
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '600',
   },
   footerContainer: {
     flexDirection: 'row',
@@ -124,6 +124,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  errorText: { color: '#dc2626', fontSize: 13, marginTop: 6 },
+  successText: { color: '#15803d', fontSize: 13, marginTop: 6 },
+  socialNotice: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 32, padding: 12, borderRadius: 12, backgroundColor: '#eff6ff' },
+  socialNoticeText: { flex: 1, color: '#1d4ed8', fontSize: 12, lineHeight: 17 },
 });
 
 export default styles;

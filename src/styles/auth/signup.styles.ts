@@ -57,6 +57,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 52,
   },
+  inputWrapperError: {
+    borderColor: '#dc2626',
+  },
   input: {
     flex: 1,
     fontSize: 16,
@@ -117,21 +120,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
   },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 32,
-  },
-  socialButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -146,6 +134,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  socialContainer: { gap: 10, marginBottom: 24 },
+  socialButton: { height: 48, borderRadius: 24, borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9 },
+  socialButtonText: { color: '#374151', fontSize: 14, fontWeight: '600' },
+  errorText: { color: '#dc2626', fontSize: 13, marginTop: 6 },
+  passwordHint: { color: '#6b7280', fontSize: 12, lineHeight: 17, marginTop: -8, marginBottom: 12 },
+  socialNotice: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 28, padding: 12, borderRadius: 12, backgroundColor: '#eff6ff' },
+  socialNoticeText: { flex: 1, color: '#1d4ed8', fontSize: 12, lineHeight: 17 },
 });
 
 export default styles;

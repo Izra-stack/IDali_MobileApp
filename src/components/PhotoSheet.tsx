@@ -1,5 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
+import type { LayoutSlot } from '../database/queries';
 
 export type PhotoSheetPlan = {
   photoWidth: number;
@@ -12,6 +13,7 @@ export type PhotoSheetPlan = {
   marginX: number;
   marginY: number;
   gap: number;
+  slots?: LayoutSlot[];
 };
 
 type PhotoSheetProps = {
@@ -24,12 +26,12 @@ type PhotoSheetProps = {
 export function PhotoSheet({ imageUri, plan, backgroundColor, maxCopies = plan.copies, fixedWidth }: PhotoSheetProps & { fixedWidth?: number }) {
   const [sheetWidth, setSheetWidth] = useState(fixedWidth || 0);
   const scale = sheetWidth > 0 ? sheetWidth / plan.paperWidth : 0;
-  const marginX = plan.marginX * scale;
-  const marginY = plan.marginY * scale;
-  const gap = plan.gap * scale;
-  const photoWidth = plan.photoWidth * scale;
-  const photoHeight = plan.photoHeight * scale;
-  const count = Math.min(plan.copies, maxCopies);
+  const slots = (plan.slots ?? Array.from({ length: plan.copies }, (_, index) => ({
+    photoWidth: plan.photoWidth,
+    photoHeight: plan.photoHeight,
+    left: plan.marginX + (index % Math.max(1, plan.columns)) * (plan.photoWidth + plan.gap),
+    top: plan.marginY + Math.floor(index / Math.max(1, plan.columns)) * (plan.photoHeight + plan.gap),
+  }))).slice(0, maxCopies);
 
   return (
     <View
@@ -38,18 +40,16 @@ export function PhotoSheet({ imageUri, plan, backgroundColor, maxCopies = plan.c
       }}
       style={[styles.sheet, { backgroundColor, aspectRatio: plan.paperWidth / plan.paperHeight }]}
     >
-      {imageUri && scale > 0 && Array.from({ length: count }, (_, index) => {
-        const column = index % plan.columns;
-        const row = Math.floor(index / plan.columns);
+      {imageUri && scale > 0 && slots.map((slot, index) => {
         return (
           <View
             key={index}
             style={{
               position: 'absolute',
-              left: marginX + column * (photoWidth + gap),
-              top: marginY + row * (photoHeight + gap),
-              width: photoWidth,
-              height: photoHeight,
+              left: slot.left * scale,
+              top: slot.top * scale,
+              width: slot.photoWidth * scale,
+              height: slot.photoHeight * scale,
               backgroundColor: '#ffffff',
               borderWidth: StyleSheet.hairlineWidth,
               borderColor: '#d1d5db',

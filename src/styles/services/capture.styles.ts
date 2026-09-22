@@ -62,6 +62,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconButtonActive: { backgroundColor: '#dbeafe', borderWidth: 1, borderColor: '#93c5fd' },
+  iconButtonDisabled: { opacity: 0.5 },
+  flashLabel: { fontSize: 9, fontWeight: '700', color: '#374151', marginTop: 1 },
   captureButton: {
     width: 72,
     height: 72,

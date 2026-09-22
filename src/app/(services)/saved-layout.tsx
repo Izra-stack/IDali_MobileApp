@@ -7,7 +7,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useDatabase } from '../../database/DatabaseProvider';
-import { getLayoutPlan, deleteLayout, SavedLayout } from '../../database/queries';
+import { getPackagePlan, deleteLayout, SavedLayout } from '../../database/queries';
 import { auth } from '../../../firebase/config';
 import { PhotoSheet } from '../../components/PhotoSheet';
 import styles from '../../styles/services/saved-layout.styles';
@@ -41,7 +41,7 @@ export default function SavedLayoutScreen() {
     );
   }
 
-  const plan = getLayoutPlan(layout.id_size, layout.paper_size);
+  const plan = getPackagePlan(layout.package_id || 'custom-package', layout.id_size, layout.paper_size);
 
   const generateHTML = async () => {
     if (!layout || !layout.photo_uri) throw new Error('No layout image URI available');
@@ -55,14 +55,11 @@ export default function SavedLayoutScreen() {
     const imgSrc = `data:image/jpeg;base64,${base64Image}`;
     
     let photosHtml = '';
-    const copies = Math.min(plan.copies, plan.columns * plan.rows);
-    for (let i = 0; i < copies; i++) {
-      const col = i % plan.columns;
-      const row = Math.floor(i / plan.columns);
-      const left = plan.marginX + col * (plan.photoWidth + plan.gap);
-      const top = plan.marginY + row * (plan.photoHeight + plan.gap);
+    for (const slot of (plan.slots ?? []).slice(0, plan.copies)) {
+      const left = slot.left;
+      const top = slot.top;
       photosHtml += `
-        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${plan.photoWidth}mm; height: ${plan.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box;">
+        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${slot.photoWidth}mm; height: ${slot.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box;">
           <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: contain;" />
         </div>
       `;

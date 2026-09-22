@@ -24,11 +24,13 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
             paper_size TEXT NOT NULL,
             background_color TEXT NOT NULL,
             layout_uri TEXT,
+            package_id TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
           );
           CREATE INDEX IF NOT EXISTS layouts_user_created_idx
             ON layouts(user_id, created_at DESC);
         `);
+        try { await db.execAsync('ALTER TABLE layouts ADD COLUMN package_id TEXT;'); } catch { /* Existing databases already have this column. */ }
       }}
     >
       {children}

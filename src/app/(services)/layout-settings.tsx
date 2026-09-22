@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { useDatabase } from '../../database/DatabaseProvider';
 import { persistSharedState, SharedState } from '../../SharedState';
-import { getLayoutPlan } from '../../database/queries';
+import { getLayoutPlan, ID_PHOTO_SIZES, type IdPhotoSize } from '../../database/queries';
 import { PhotoSheet } from '../../components/PhotoSheet';
 import styles from '../../styles/services/layout-settings.styles';
 
@@ -14,7 +14,7 @@ export default function LayoutSettingsScreen() {
   const router = useRouter();
   const db = useDatabase();
   
-  const [idSizes, setIdSizes] = useState<{name: string, width_mm: number, height_mm: number}[]>([]);
+  const [idSizes, setIdSizes] = useState<IdPhotoSize[]>(ID_PHOTO_SIZES);
   const [idSize, setIdSize] = useState(SharedState.idSize);
   const [paperSize, setPaperSize] = useState(SharedState.paperSize);
   const [bgColor, setBgColor] = useState(SharedState.bgColor);
@@ -25,21 +25,16 @@ export default function LayoutSettingsScreen() {
   // Effect: load ID dimensions from the local database once per screen mount.
   useEffect(() => {
     async function loadSizes() {
+      const catalogSize = ID_PHOTO_SIZES.find(size => size.name === SharedState.idSize);
+      if (!catalogSize && SharedState.idSize === '2x2') setIdSize('2x2 inches');
       try {
-        const result = await db.getAllAsync('SELECT * FROM id_sizes');
-        if (result && result.length > 0) {
-          setIdSizes(result as any[]);
-          const currentSize = (result as any[]).some(size => size.name === SharedState.idSize) ? SharedState.idSize : (result[0] as any).name;
-          setIdSize(currentSize);
-        } else {
-          setIdSizes([
-            { name: '1x1', width_mm: 25.4, height_mm: 25.4 },
-            { name: '2x2', width_mm: 50.8, height_mm: 50.8 },
-            { name: 'Passport Size', width_mm: 35, height_mm: 45 }
-          ]);
+        const result = await db.getAllAsync<{ name: string; width_mm: number; height_mm: number }>('SELECT name, width_mm, height_mm FROM id_sizes');
+        if (result.length > 0) {
+          const byName = new Map(result.map(size => [size.name, size]));
+          setIdSizes(ID_PHOTO_SIZES.map(size => ({ ...size, ...(byName.get(size.name) ?? {}) })));
         }
-      } catch (error) {
-        console.error("Failed to load sizes from SQLite:", error);
+      } catch {
+        // Older database assets do not contain id_sizes; use the built-in catalog.
       }
     }
     loadSizes();
@@ -48,6 +43,7 @@ export default function LayoutSettingsScreen() {
   // Event handler: save layout choices before opening the final preview.
   const handleNext = () => {
     SharedState.idSize = idSize;
+    SharedState.packageId = 'custom-package';
     SharedState.paperSize = paperSize;
     SharedState.bgColor = bgColor;
     void persistSharedState();
@@ -92,7 +88,7 @@ export default function LayoutSettingsScreen() {
 
         <View style={styles.optionsContainer}>
           {/* Conditional + loop: show database sizes or a loading message. */}
-          {idSizes.length > 0 ? idSizes.map((sizeObj) => (
+          {idSizes.map((sizeObj) => (
             <TouchableOpacity 
               key={sizeObj.name}
               style={[styles.optionCard, idSize === sizeObj.name && styles.optionCardActive]} 
@@ -100,15 +96,13 @@ export default function LayoutSettingsScreen() {
               <View style={[styles.optionIconContainer, idSize === sizeObj.name && styles.optionIconContainerActive]}>
                 <Ionicons name="person" size={24} color={idSize === sizeObj.name ? '#ffffff' : '#3b74f6'} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={[styles.optionTitle, idSize === sizeObj.name && styles.optionTitleActive]}>{sizeObj.name}</Text>
-                <Text style={{fontSize: 10, color: idSize === sizeObj.name ? '#dbeafe' : '#9ca3af'}}>{sizeObj.width_mm}x{sizeObj.height_mm}mm</Text>
+                <Text style={{fontSize: 11, color: idSize === sizeObj.name ? '#2563eb' : '#6b7280'}}>{sizeObj.width_mm} × {sizeObj.height_mm} mm · {sizeObj.description}</Text>
               </View>
               {idSize === sizeObj.name && <Ionicons name="checkmark-circle" size={24} color="#3b74f6" style={{marginLeft: 'auto'}}/>}
             </TouchableOpacity>
-          )) : (
-            <Text style={{color: '#9ca3af', padding: 10}}>Loading sizes from database...</Text>
-          )}
+          ))}
         </View>
 
         <Text style={[styles.title, {marginTop: 20}]}>Paper Size Selection</Text>
