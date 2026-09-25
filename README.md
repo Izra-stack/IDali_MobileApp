@@ -36,30 +36,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 10. **Save/Export** – User saves, exports, or downloads the final layout.
 11. **History** – Previously created layouts can be accessed again.
 
-## Architecture
-
-```text
-                IDali Mobile App
-                       │
-                       ▼
-                React Native UI
-                       │
-                       ▼
-                Application Logic
-                       │
-              ┌────────┴────────┐
-              ▼                 ▼
-          SQLite             Firebase
-        Local Data       Authentication
-        & History        Cloud Services
-              │
-              ▼
-       Generated Layout
-              │
-              ▼
-       Save / Export
-```
-
 ## Technology Stack
 
 * **React Native** – Mobile application
@@ -81,13 +57,3 @@ into one simple mobile application.
 ## Status
 
  **Currently in development**
-
-## Social authentication configuration
-
-Google sign-in uses Expo AuthSession and Firebase credentials. Set these public client IDs in the Expo environment before building:
-
-* `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-* `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
-* `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-
-Enable Google and Apple providers in Firebase Authentication. For Apple sign-in, configure the Apple Sign In capability, service identifiers, and Firebase Apple provider settings before building an iOS development or production app. The app links a social credential to an existing email account after the user signs in with that account, instead of creating a duplicate.
