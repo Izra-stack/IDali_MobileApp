@@ -27,7 +27,7 @@ import {
   googleClientIds,
   linkPendingCredential,
   signInWithApple,
-  signInWithGoogleToken
+  signInWithGoogleToken,
 } from "../../services/socialAuth";
 import styles from "../../styles/auth/login.styles";
 
@@ -110,11 +110,7 @@ export default function LoginScreen() {
   };
   const handleGoogle = async () => {
     setError("");
-    if (
-      !googleClientIds.web &&
-      !googleClientIds.android &&
-      !googleClientIds.ios
-    ) {
+    if (!googleClientIds.isConfigured) {
       setError("Google Sign In is not configured for this build.");
       return;
     }

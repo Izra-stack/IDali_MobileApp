@@ -9,6 +9,7 @@ export type EditorState = {
   packageId: string;
   paperSize: string;
   bgColor: string;
+  numberOfCopies: number;
 };
 
 // In-memory draft: screens update this object before persisting it.
@@ -20,6 +21,7 @@ export const SharedState: EditorState = {
   packageId: 'a4-package',
   paperSize: 'A4',
   bgColor: 'White',
+  numberOfCopies: 1,
 };
 
 const STORAGE_KEY = '@idali/editor-state';
@@ -54,6 +56,7 @@ export async function clearSharedState() {
     packageId: 'a4-package',
     paperSize: 'A4',
     bgColor: 'White',
+    numberOfCopies: 1,
   });
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);

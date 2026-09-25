@@ -1,6 +1,6 @@
-﻿import { StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-// Styles: paper preview and layout-selection controls.
+// Styles: paper preview, ID package, paper size, copies, and customization controls.
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -27,7 +27,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 20,
+  },
+  sectionContainer: {
+    marginBottom: 24,
   },
   title: {
     fontSize: 18,
@@ -38,7 +41,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#6b7280',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   previewCard: {
     backgroundColor: '#f9fafb',
@@ -110,8 +113,9 @@ const styles = StyleSheet.create({
   },
   previewCaption: {
     marginTop: 10,
-    color: '#6b7280',
-    fontSize: 12,
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '600',
     textAlign: 'center',
   },
   previewHint: {
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 16,
@@ -137,19 +141,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#eff6ff',
   },
   optionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   optionIconContainerActive: {
     backgroundColor: '#3b74f6',
   },
-  optionTitle: {
+  optionBody: {
     flex: 1,
+  },
+  optionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#374151',
@@ -157,12 +163,86 @@ const styles = StyleSheet.create({
   optionTitleActive: {
     color: '#111827',
   },
+  optionMeta: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  optionMetaActive: {
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  mixedBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  mixedBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
+  copiesCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  copiesLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  copiesLabelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  copiesHintText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  copiesInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 4,
+  },
+  copiesButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copiesButtonDisabled: {
+    backgroundColor: '#f3f4f6',
+    opacity: 0.5,
+  },
+  copiesInput: {
+    width: 54,
+    height: 36,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 32,
-    marginTop: 12,
+    marginTop: 8,
   },
   colorChip: {
     paddingHorizontal: 16,
@@ -183,6 +263,7 @@ const styles = StyleSheet.create({
   },
   colorTextActive: {
     color: '#3b74f6',
+    fontWeight: '600',
   },
   generateButton: {
     flexDirection: 'row',

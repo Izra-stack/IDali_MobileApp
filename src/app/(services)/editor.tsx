@@ -2,36 +2,97 @@
 import * as ImageManipulator from "expo-image-manipulator";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, PanResponder, Pressable, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  PanResponder,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { removeBackground } from "../../services/removeBackground";
 import { persistSharedState, SharedState } from "../../SharedState";
 import styles from "../../styles/services/editor.styles";
 
 type CropRect = { left: number; top: number; width: number; height: number };
-type CropMode = "move" | "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+type CropMode =
+  | "move"
+  | "left"
+  | "right"
+  | "top"
+  | "bottom"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
 
-function AdjustmentSlider({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+function AdjustmentSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
   const { width } = useWindowDimensions();
   const trackWidth = Math.max(120, Math.min(260, width - 194));
   const updateFromX = (locationX: number) => {
     const next = Math.max(-1, Math.min(1, (locationX / trackWidth) * 2 - 1));
     onChange(Math.round(next * 100) / 100);
   };
-  const responder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: event => updateFromX(event.nativeEvent.locationX),
-    onPanResponderMove: event => updateFromX(event.nativeEvent.locationX),
-  })).current;
+  const responder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX),
+      onPanResponderMove: (event) => updateFromX(event.nativeEvent.locationX),
+    }),
+  ).current;
   const thumbPosition = ((value + 1) / 2) * trackWidth;
 
   return (
-    <View {...responder.panHandlers} style={{ width: trackWidth, height: 40, justifyContent: "center" }} accessibilityRole="adjustable">
-      <View style={{ height: 5, borderRadius: 3, backgroundColor: "#dbeafe", overflow: "hidden" }}>
-        <View style={{ width: `${((value + 1) / 2) * 100}%`, height: "100%", backgroundColor: "#3b74f6" }} />
+    <View
+      {...responder.panHandlers}
+      style={{ width: trackWidth, height: 40, justifyContent: "center" }}
+      accessibilityRole="adjustable"
+    >
+      <View
+        style={{
+          height: 5,
+          borderRadius: 3,
+          backgroundColor: "#dbeafe",
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            width: `${((value + 1) / 2) * 100}%`,
+            height: "100%",
+            backgroundColor: "#3b74f6",
+          }}
+        />
       </View>
-      <View style={{ position: "absolute", left: thumbPosition - 10, width: 20, height: 20, borderRadius: 10, backgroundColor: "#3b74f6", borderWidth: 3, borderColor: "#ffffff", shadowColor: "#1d4ed8", shadowOpacity: 0.2, shadowRadius: 3, elevation: 2 }} />
+      <View
+        style={{
+          position: "absolute",
+          left: thumbPosition - 10,
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          backgroundColor: "#3b74f6",
+          borderWidth: 3,
+          borderColor: "#ffffff",
+          shadowColor: "#1d4ed8",
+          shadowOpacity: 0.2,
+          shadowRadius: 3,
+          elevation: 2,
+        }}
+      />
     </View>
   );
 }
@@ -46,7 +107,10 @@ export default function EditorScreen() {
     string | null
   >(null);
   const [adjustmentsOpen, setAdjustmentsOpen] = useState(false);
-  const adjustmentSnapshot = useRef({ brightness: SharedState.brightness ?? 0, contrast: SharedState.contrast ?? 0 });
+  const adjustmentSnapshot = useRef({
+    brightness: SharedState.brightness ?? 0,
+    contrast: SharedState.contrast ?? 0,
+  });
   const [cropOpen, setCropOpen] = useState(false);
   const [cropStageSize, setCropStageSize] = useState({ width: 0, height: 0 });
   const [cropImageSize, setCropImageSize] = useState({ width: 0, height: 0 });
@@ -127,34 +191,54 @@ export default function EditorScreen() {
   };
 
   useEffect(() => {
-    if (!cropOpen || !imageUri || cropStageSize.width === 0 || cropStageSize.height === 0) return;
+    if (
+      !cropOpen ||
+      !imageUri ||
+      cropStageSize.width === 0 ||
+      cropStageSize.height === 0
+    )
+      return;
     let active = true;
-    Image.getSize(imageUri, (width, height) => {
-      if (!active) return;
-      const scale = Math.min(cropStageSize.width / width, cropStageSize.height / height);
-      const frame = {
-        left: (cropStageSize.width - width * scale) / 2,
-        top: (cropStageSize.height - height * scale) / 2,
-        width: width * scale,
-        height: height * scale,
-      };
-      const inset = Math.min(frame.width, frame.height) * 0.08;
-      const initialCrop = {
-        left: frame.left + inset,
-        top: frame.top + inset,
-        width: frame.width - inset * 2,
-        height: frame.height - inset * 2,
-      };
-      setCropImageSize({ width, height });
-      setCropFrame(frame);
-      cropFrameRef.current = frame;
-      setCropRect(initialCrop);
-      cropRectRef.current = initialCrop;
-    }, () => Alert.alert("Crop failed", "The photo dimensions could not be read."));
-    return () => { active = false; };
+    Image.getSize(
+      imageUri,
+      (width, height) => {
+        if (!active) return;
+        const scale = Math.min(
+          cropStageSize.width / width,
+          cropStageSize.height / height,
+        );
+        const frame = {
+          left: (cropStageSize.width - width * scale) / 2,
+          top: (cropStageSize.height - height * scale) / 2,
+          width: width * scale,
+          height: height * scale,
+        };
+        const inset = Math.min(frame.width, frame.height) * 0.08;
+        const initialCrop = {
+          left: frame.left + inset,
+          top: frame.top + inset,
+          width: frame.width - inset * 2,
+          height: frame.height - inset * 2,
+        };
+        setCropImageSize({ width, height });
+        setCropFrame(frame);
+        cropFrameRef.current = frame;
+        setCropRect(initialCrop);
+        cropRectRef.current = initialCrop;
+      },
+      () =>
+        Alert.alert("Crop failed", "The photo dimensions could not be read."),
+    );
+    return () => {
+      active = false;
+    };
   }, [cropOpen, cropStageSize, imageUri]);
 
-  const getCropMode = (x: number, y: number, rect: CropRect): CropMode | null => {
+  const getCropMode = (
+    x: number,
+    y: number,
+    rect: CropRect,
+  ): CropMode | null => {
     const handleRadius = 28;
     const nearLeft = Math.abs(x - rect.left) <= handleRadius;
     const nearRight = Math.abs(x - (rect.left + rect.width)) <= handleRadius;
@@ -165,57 +249,108 @@ export default function EditorScreen() {
     if (nearBottom && nearLeft) return "bottom-left";
     if (nearBottom && nearRight) return "bottom-right";
     if (nearLeft && y >= rect.top && y <= rect.top + rect.height) return "left";
-    if (nearRight && y >= rect.top && y <= rect.top + rect.height) return "right";
+    if (nearRight && y >= rect.top && y <= rect.top + rect.height)
+      return "right";
     if (nearTop && x >= rect.left && x <= rect.left + rect.width) return "top";
-    if (nearBottom && x >= rect.left && x <= rect.left + rect.width) return "bottom";
-    if (x >= rect.left && x <= rect.left + rect.width && y >= rect.top && y <= rect.top + rect.height) return "move";
+    if (nearBottom && x >= rect.left && x <= rect.left + rect.width)
+      return "bottom";
+    if (
+      x >= rect.left &&
+      x <= rect.left + rect.width &&
+      y >= rect.top &&
+      y <= rect.top + rect.height
+    )
+      return "move";
     return null;
   };
 
-  const cropResponder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: event => {
-      const rect = cropRectRef.current;
-      if (!rect) return;
-      cropModeRef.current = getCropMode(event.nativeEvent.locationX, event.nativeEvent.locationY, rect);
-      cropStartRef.current = rect;
-    },
-    onPanResponderMove: (_, gestureState) => {
-      const start = cropStartRef.current;
-      const frame = cropFrameRef.current;
-      const mode = cropModeRef.current;
-      if (!start || !frame || !mode) return;
-      const minSize = Math.min(48, frame.width, frame.height);
-      let left = start.left;
-      let top = start.top;
-      let right = start.left + start.width;
-      let bottom = start.top + start.height;
+  const cropResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (event) => {
+        const rect = cropRectRef.current;
+        if (!rect) return;
+        cropModeRef.current = getCropMode(
+          event.nativeEvent.locationX,
+          event.nativeEvent.locationY,
+          rect,
+        );
+        cropStartRef.current = rect;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const start = cropStartRef.current;
+        const frame = cropFrameRef.current;
+        const mode = cropModeRef.current;
+        if (!start || !frame || !mode) return;
+        const minSize = Math.min(48, frame.width, frame.height);
+        let left = start.left;
+        let top = start.top;
+        let right = start.left + start.width;
+        let bottom = start.top + start.height;
 
-      if (mode === "move") {
-        const dx = Math.max(frame.left - start.left, Math.min(frame.left + frame.width - start.width - start.left, gestureState.dx));
-        const dy = Math.max(frame.top - start.top, Math.min(frame.top + frame.height - start.height - start.top, gestureState.dy));
-        left += dx; right += dx; top += dy; bottom += dy;
-      } else {
-        if (mode.includes("left")) left = Math.max(frame.left, Math.min(right - minSize, start.left + gestureState.dx));
-        if (mode.includes("right")) right = Math.min(frame.left + frame.width, Math.max(left + minSize, start.left + start.width + gestureState.dx));
-        if (mode.includes("top")) top = Math.max(frame.top, Math.min(bottom - minSize, start.top + gestureState.dy));
-        if (mode.includes("bottom")) bottom = Math.min(frame.top + frame.height, Math.max(top + minSize, start.top + start.height + gestureState.dy));
-      }
+        if (mode === "move") {
+          const dx = Math.max(
+            frame.left - start.left,
+            Math.min(
+              frame.left + frame.width - start.width - start.left,
+              gestureState.dx,
+            ),
+          );
+          const dy = Math.max(
+            frame.top - start.top,
+            Math.min(
+              frame.top + frame.height - start.height - start.top,
+              gestureState.dy,
+            ),
+          );
+          left += dx;
+          right += dx;
+          top += dy;
+          bottom += dy;
+        } else {
+          if (mode.includes("left"))
+            left = Math.max(
+              frame.left,
+              Math.min(right - minSize, start.left + gestureState.dx),
+            );
+          if (mode.includes("right"))
+            right = Math.min(
+              frame.left + frame.width,
+              Math.max(
+                left + minSize,
+                start.left + start.width + gestureState.dx,
+              ),
+            );
+          if (mode.includes("top"))
+            top = Math.max(
+              frame.top,
+              Math.min(bottom - minSize, start.top + gestureState.dy),
+            );
+          if (mode.includes("bottom"))
+            bottom = Math.min(
+              frame.top + frame.height,
+              Math.max(
+                top + minSize,
+                start.top + start.height + gestureState.dy,
+              ),
+            );
+        }
 
-      const next = { left, top, width: right - left, height: bottom - top };
-      cropRectRef.current = next;
-      setCropRect(next);
-    },
-    onPanResponderRelease: () => {
-      cropModeRef.current = null;
-      cropStartRef.current = null;
-    },
-    onPanResponderTerminate: () => {
-      cropModeRef.current = null;
-      cropStartRef.current = null;
-    },
-  })).current;
+        const next = { left, top, width: right - left, height: bottom - top };
+        cropRectRef.current = next;
+        setCropRect(next);
+      },
+      onPanResponderRelease: () => {
+        cropModeRef.current = null;
+        cropStartRef.current = null;
+      },
+      onPanResponderTerminate: () => {
+        cropModeRef.current = null;
+        cropStartRef.current = null;
+      },
+    }),
+  ).current;
 
   const cancelCrop = () => {
     setCropOpen(false);
@@ -226,13 +361,26 @@ export default function EditorScreen() {
   };
 
   const applyCrop = async () => {
-    if (!imageUri || !cropRect || !cropFrame || !cropImageSize.width || !cropImageSize.height) return;
+    if (
+      !imageUri ||
+      !cropRect ||
+      !cropFrame ||
+      !cropImageSize.width ||
+      !cropImageSize.height
+    )
+      return;
     try {
       const scaleX = cropImageSize.width / cropFrame.width;
       const scaleY = cropImageSize.height / cropFrame.height;
       const crop = {
-        originX: Math.max(0, Math.round((cropRect.left - cropFrame.left) * scaleX)),
-        originY: Math.max(0, Math.round((cropRect.top - cropFrame.top) * scaleY)),
+        originX: Math.max(
+          0,
+          Math.round((cropRect.left - cropFrame.left) * scaleX),
+        ),
+        originY: Math.max(
+          0,
+          Math.round((cropRect.top - cropFrame.top) * scaleY),
+        ),
         width: Math.max(1, Math.round(cropRect.width * scaleX)),
         height: Math.max(1, Math.round(cropRect.height * scaleY)),
       };
@@ -406,18 +554,6 @@ export default function EditorScreen() {
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.idSizeSetButton}
-          onPress={() => router.push("/id-size-set" as never)}
-          disabled={!imageUri}
-          accessibilityRole="button"
-          accessibilityLabel="Open ID Size Set"
-        >
-          <View style={styles.idSizeSetIcon}><Ionicons name="grid-outline" size={24} color="#ffffff" /></View>
-          <View style={{ flex: 1 }}><Text style={styles.idSizeSetTitle}>ID Size Set</Text><Text style={styles.idSizeSetSubtitle}>Choose a photo size and print package</Text></View>
-          <Ionicons name="chevron-forward" size={22} color="#2563eb" />
-        </TouchableOpacity>
-
         <View style={styles.toolsContainer}>
           <Text style={styles.toolsTitle}>Editing Tools</Text>
           <ScrollView
@@ -482,10 +618,7 @@ export default function EditorScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.toolItem}
-              onPress={openAdjustments}
-            >
+            <TouchableOpacity style={styles.toolItem} onPress={openAdjustments}>
               <View style={styles.toolIcon}>
                 <Ionicons name="options" size={24} color="#3b74f6" />
               </View>
@@ -514,21 +647,76 @@ export default function EditorScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ width: 74, color: "#374151", fontWeight: "600" }}>Brightness</Text>
+                <Text
+                  style={{ width: 74, color: "#374151", fontWeight: "600" }}
+                >
+                  Brightness
+                </Text>
                 <AdjustmentSlider value={brightness} onChange={setBrightness} />
-                <Text style={{ width: 36, marginLeft: 4, textAlign: "right", color: "#6b7280", fontSize: 12 }}>{Math.round(brightness * 100)}%</Text>
+                <Text
+                  style={{
+                    width: 36,
+                    marginLeft: 4,
+                    textAlign: "right",
+                    color: "#6b7280",
+                    fontSize: 12,
+                  }}
+                >
+                  {Math.round(brightness * 100)}%
+                </Text>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ width: 74, color: "#374151", fontWeight: "600" }}>Contrast</Text>
+                <Text
+                  style={{ width: 74, color: "#374151", fontWeight: "600" }}
+                >
+                  Contrast
+                </Text>
                 <AdjustmentSlider value={contrast} onChange={setContrast} />
-                <Text style={{ width: 36, marginLeft: 4, textAlign: "right", color: "#6b7280", fontSize: 12 }}>{Math.round(contrast * 100)}%</Text>
+                <Text
+                  style={{
+                    width: 36,
+                    marginLeft: 4,
+                    textAlign: "right",
+                    color: "#6b7280",
+                    fontSize: 12,
+                  }}
+                >
+                  {Math.round(contrast * 100)}%
+                </Text>
               </View>
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 2 }}>
-                <TouchableOpacity onPress={cancelAdjustments} style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: "#e5e7eb" }}>
-                  <Text style={{ color: "#374151", fontWeight: "600" }}>Cancel</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 2,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={cancelAdjustments}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor: "#e5e7eb",
+                  }}
+                >
+                  <Text style={{ color: "#374151", fontWeight: "600" }}>
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={applyAdjustments} style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: "#2563eb" }}>
-                  <Text style={{ color: "#ffffff", fontWeight: "600" }}>Done</Text>
+                <TouchableOpacity
+                  onPress={applyAdjustments}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor: "#2563eb",
+                  }}
+                >
+                  <Text style={{ color: "#ffffff", fontWeight: "600" }}>
+                    Done
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -755,36 +943,111 @@ export default function EditorScreen() {
           )}
         </View>
       </ScrollView>
-      <Modal visible={processing} transparent animationType="fade" onRequestClose={() => undefined}>
+      <Modal
+        visible={processing}
+        transparent
+        animationType="fade"
+        onRequestClose={() => undefined}
+      >
         <View
           accessibilityRole="progressbar"
           accessibilityLabel="Removing Background"
-          style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(17,24,39,0.72)" }}
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(17,24,39,0.72)",
+          }}
         >
-          <View style={{ minWidth: 220, alignItems: "center", paddingHorizontal: 28, paddingVertical: 26, borderRadius: 20, backgroundColor: "#ffffff" }}>
+          <View
+            style={{
+              minWidth: 220,
+              alignItems: "center",
+              paddingHorizontal: 28,
+              paddingVertical: 26,
+              borderRadius: 20,
+              backgroundColor: "#ffffff",
+            }}
+          >
             <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={{ marginTop: 16, color: "#111827", fontSize: 16, fontWeight: "700" }}>Removing Background…</Text>
-            <Text style={{ marginTop: 6, color: "#6b7280", fontSize: 13, textAlign: "center" }}>This may take a few seconds.</Text>
+            <Text
+              style={{
+                marginTop: 16,
+                color: "#111827",
+                fontSize: 16,
+                fontWeight: "700",
+              }}
+            >
+              Removing Background…
+            </Text>
+            <Text
+              style={{
+                marginTop: 6,
+                color: "#6b7280",
+                fontSize: 13,
+                textAlign: "center",
+              }}
+            >
+              This may take a few seconds.
+            </Text>
           </View>
         </View>
       </Modal>
-      <Modal visible={cropOpen} animationType="slide" onRequestClose={cancelCrop}>
+      <Modal
+        visible={cropOpen}
+        animationType="slide"
+        onRequestClose={cancelCrop}
+      >
         <SafeAreaView style={{ flex: 1, backgroundColor: "#111827" }}>
-          <View style={{ height: 64, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20 }}>
-            <TouchableOpacity onPress={cancelCrop} accessibilityLabel="Cancel crop">
+          <View
+            style={{
+              height: 64,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+            }}
+          >
+            <TouchableOpacity
+              onPress={cancelCrop}
+              accessibilityLabel="Cancel crop"
+            >
               <Text style={{ color: "#ffffff", fontSize: 16 }}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={{ color: "#ffffff", fontSize: 18, fontWeight: "600" }}>Crop Photo</Text>
-            <TouchableOpacity onPress={applyCrop} disabled={!cropRect} accessibilityLabel="Apply crop">
-              <Text style={{ color: cropRect ? "#60a5fa" : "#6b7280", fontSize: 16, fontWeight: "700" }}>Done</Text>
+            <Text style={{ color: "#ffffff", fontSize: 18, fontWeight: "600" }}>
+              Crop Photo
+            </Text>
+            <TouchableOpacity
+              onPress={applyCrop}
+              disabled={!cropRect}
+              accessibilityLabel="Apply crop"
+            >
+              <Text
+                style={{
+                  color: cropRect ? "#60a5fa" : "#6b7280",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                Done
+              </Text>
             </TouchableOpacity>
           </View>
           <View
             style={{ flex: 1, backgroundColor: "#030712" }}
-            onLayout={event => setCropStageSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}
+            onLayout={(event) =>
+              setCropStageSize({
+                width: event.nativeEvent.layout.width,
+                height: event.nativeEvent.layout.height,
+              })
+            }
           >
             {imageUri && (
-              <Image source={{ uri: imageUri }} style={{ position: "absolute", inset: 0 }} resizeMode="contain" />
+              <Image
+                source={{ uri: imageUri }}
+                style={{ position: "absolute", inset: 0 }}
+                resizeMode="contain"
+              />
             )}
             {cropRect && (
               <View
@@ -792,29 +1055,142 @@ export default function EditorScreen() {
                 style={{ position: "absolute", inset: 0 }}
                 accessibilityLabel="Crop selection"
               >
-                <View style={{ position: "absolute", left: 0, right: 0, top: 0, height: cropRect.top, backgroundColor: "rgba(0,0,0,0.55)" }} />
-                <View style={{ position: "absolute", left: 0, right: 0, top: cropRect.top + cropRect.height, bottom: 0, backgroundColor: "rgba(0,0,0,0.55)" }} />
-                <View style={{ position: "absolute", left: 0, top: cropRect.top, width: cropRect.left, height: cropRect.height, backgroundColor: "rgba(0,0,0,0.55)" }} />
-                <View style={{ position: "absolute", left: cropRect.left + cropRect.width, right: 0, top: cropRect.top, height: cropRect.height, backgroundColor: "rgba(0,0,0,0.55)" }} />
-                <View style={{ position: "absolute", left: cropRect.left, top: cropRect.top, width: cropRect.width, height: cropRect.height, borderWidth: 2, borderColor: "#ffffff" }} pointerEvents="none">
-                  <View style={{ position: "absolute", left: "33.33%", top: 0, bottom: 0, borderLeftWidth: 1, borderColor: "rgba(255,255,255,0.55)" }} />
-                  <View style={{ position: "absolute", left: "66.66%", top: 0, bottom: 0, borderLeftWidth: 1, borderColor: "rgba(255,255,255,0.55)" }} />
-                  <View style={{ position: "absolute", top: "33.33%", left: 0, right: 0, borderTopWidth: 1, borderColor: "rgba(255,255,255,0.55)" }} />
-                  <View style={{ position: "absolute", top: "66.66%", left: 0, right: 0, borderTopWidth: 1, borderColor: "rgba(255,255,255,0.55)" }} />
+                <View
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    height: cropRect.top,
+                    backgroundColor: "rgba(0,0,0,0.55)",
+                  }}
+                />
+                <View
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: cropRect.top + cropRect.height,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.55)",
+                  }}
+                />
+                <View
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: cropRect.top,
+                    width: cropRect.left,
+                    height: cropRect.height,
+                    backgroundColor: "rgba(0,0,0,0.55)",
+                  }}
+                />
+                <View
+                  style={{
+                    position: "absolute",
+                    left: cropRect.left + cropRect.width,
+                    right: 0,
+                    top: cropRect.top,
+                    height: cropRect.height,
+                    backgroundColor: "rgba(0,0,0,0.55)",
+                  }}
+                />
+                <View
+                  style={{
+                    position: "absolute",
+                    left: cropRect.left,
+                    top: cropRect.top,
+                    width: cropRect.width,
+                    height: cropRect.height,
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                  }}
+                  pointerEvents="none"
+                >
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: "33.33%",
+                      top: 0,
+                      bottom: 0,
+                      borderLeftWidth: 1,
+                      borderColor: "rgba(255,255,255,0.55)",
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: "66.66%",
+                      top: 0,
+                      bottom: 0,
+                      borderLeftWidth: 1,
+                      borderColor: "rgba(255,255,255,0.55)",
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "33.33%",
+                      left: 0,
+                      right: 0,
+                      borderTopWidth: 1,
+                      borderColor: "rgba(255,255,255,0.55)",
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "66.66%",
+                      left: 0,
+                      right: 0,
+                      borderTopWidth: 1,
+                      borderColor: "rgba(255,255,255,0.55)",
+                    }}
+                  />
                 </View>
                 {[
                   { left: cropRect.left - 10, top: cropRect.top - 10 },
-                  { left: cropRect.left + cropRect.width - 10, top: cropRect.top - 10 },
-                  { left: cropRect.left - 10, top: cropRect.top + cropRect.height - 10 },
-                  { left: cropRect.left + cropRect.width - 10, top: cropRect.top + cropRect.height - 10 },
+                  {
+                    left: cropRect.left + cropRect.width - 10,
+                    top: cropRect.top - 10,
+                  },
+                  {
+                    left: cropRect.left - 10,
+                    top: cropRect.top + cropRect.height - 10,
+                  },
+                  {
+                    left: cropRect.left + cropRect.width - 10,
+                    top: cropRect.top + cropRect.height - 10,
+                  },
                 ].map((handle, index) => (
-                  <View key={index} pointerEvents="none" style={{ position: "absolute", ...handle, width: 20, height: 20, borderRadius: 4, backgroundColor: "#ffffff" }} />
+                  <View
+                    key={index}
+                    pointerEvents="none"
+                    style={{
+                      position: "absolute",
+                      ...handle,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 4,
+                      backgroundColor: "#ffffff",
+                    }}
+                  />
                 ))}
               </View>
             )}
           </View>
-          <View style={{ minHeight: 58, alignItems: "center", justifyContent: "center", paddingHorizontal: 20 }}>
-            <Text style={{ color: "#d1d5db", fontSize: 13 }}>Drag inside the frame to move it. Drag an edge or corner to resize.</Text>
+          <View
+            style={{
+              minHeight: 58,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: 20,
+            }}
+          >
+            <Text style={{ color: "#d1d5db", fontSize: 13 }}>
+              Drag inside the frame to move it. Drag an edge or corner to
+              resize.
+            </Text>
           </View>
         </SafeAreaView>
       </Modal>

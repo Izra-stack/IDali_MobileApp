@@ -13,10 +13,15 @@ import { auth } from '../../firebase/config';
 
 let pendingCredential: AuthCredential | null = null;
 
+const rawWeb = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const rawAndroid = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+const rawIos = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
 export const googleClientIds = {
-  web: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  android: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-  ios: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  web: rawWeb || '',
+  android: rawAndroid || rawWeb || '',
+  ios: rawIos || rawWeb || '',
+  isConfigured: Boolean(rawWeb || rawAndroid || rawIos),
 };
 
 export function rememberPendingCredential(credential: AuthCredential) {

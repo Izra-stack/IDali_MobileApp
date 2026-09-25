@@ -94,7 +94,7 @@ export default function SignupScreen() {
   };
   const handleGoogle = async () => {
     setErrors({});
-    if (!googleClientIds.web && !googleClientIds.android && !googleClientIds.ios) { setErrors({ login: "Google Sign In is not configured for this build." }); return; }
+    if (!googleClientIds.isConfigured) { setErrors({ login: "Google Sign In is not configured for this build." }); return; }
     if (!googleRequest) { setErrors({ login: "Google Sign In is still loading. Please try again." }); return; }
     setSocialLoading(true);
     try { await promptGoogle(); } catch (authError) { setErrors({ login: firebaseAuthMessage(authError, "signup") }); setSocialLoading(false); }
