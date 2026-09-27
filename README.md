@@ -36,16 +36,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 10. **Save/Export** – User saves, exports, or downloads the final layout.
 11. **History** – Previously created layouts can be accessed again.
 
-## Technology Stack
-
-* **React Native** – Mobile application
-* **Expo** – Development framework
-* **TypeScript** – Programming language
-* **Expo Router** – Navigation
-* **SQLite** – Local database and offline data
-* **Firebase** – Authentication / cloud services
-* **Git & GitHub** – Version control
-
 ## Project Goal
 
 IDali aims to make ID photo preparation easier by combining:
