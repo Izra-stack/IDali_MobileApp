@@ -200,7 +200,7 @@ export async function removeBackground(imageUri: string): Promise<string> {
   // Strategy 2: Direct API fallback from mobile client
   const base64Data = await sourceFile.base64();
 
-  const removeBgKey = getApiKey("qV972mWyekfdW1GTg5XN2H8P");
+  const removeBgKey = getApiKey("REMOVE_BG_API_KEY");
   if (removeBgKey) {
     try {
       return await removeWithRemoveBgDirect(base64Data, removeBgKey);
@@ -209,9 +209,7 @@ export async function removeBackground(imageUri: string): Promise<string> {
     }
   }
 
-  const magicHourKey = getApiKey(
-    "mhk_live_FVhMOsM4DiU2ZkxFmSCs7t1tCTlRrCieGC1u6AcSkCjmmLmVD9a2P0RlFp0donf4UZtGu6SY0AST9QxJ",
-  );
+  const magicHourKey = getApiKey("MAGIC_HOUR_API_KEY");
   if (magicHourKey) {
     try {
       return await removeWithMagicHourDirect(
