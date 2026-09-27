@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Google from "expo-auth-session/providers/google";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import { useEffect, useState } from "react";
 import {
@@ -12,6 +13,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -21,8 +23,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../../../firebase/config";
 import {
   firebaseAuthMessage,
+  isDisposableEmail,
+  isValidEmail,
   normalizeEmail,
 } from "../../services/authValidation";
+import { sendBrandedVerificationEmail } from "../../services/emailVerification";
 import {
   googleClientIds,
   linkPendingCredential,
@@ -35,6 +40,10 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    registered?: string;
+    email?: string;
+  }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,6 +51,8 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [socialLoading, setSocialLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+
   const [googleRequest, googleResponse, promptGoogle] =
     Google.useIdTokenAuthRequest({
       webClientId: googleClientIds.web,
@@ -49,6 +60,13 @@ export default function LoginScreen() {
       iosClientId: googleClientIds.ios,
       selectAccount: true,
     });
+
+  useEffect(() => {
+    if (params.registered === "true") {
+      if (params.email) setEmail(params.email);
+      setResetMessage("Check your inbox to verify your email.");
+    }
+  }, [params.registered, params.email]);
 
   useEffect(() => {
     if (!googleResponse) return;
@@ -85,12 +103,22 @@ export default function LoginScreen() {
       }
     })();
   }, [googleResponse, router]);
+
   const handleLogin = async () => {
     setError("");
     setResetMessage("");
+    setUnverifiedEmail("");
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail || !password) {
       setError("Enter your email address and password.");
+      return;
+    }
+    if (!isValidEmail(normalizedEmail)) {
+      if (isDisposableEmail(normalizedEmail)) {
+        setError("Temporary or disposable email addresses are not allowed.");
+      } else {
+        setError("Enter a valid email address (e.g. name@example.com).");
+      }
       return;
     }
     setLoading(true);
@@ -100,7 +128,15 @@ export default function LoginScreen() {
         normalizedEmail,
         password,
       );
-      await linkPendingCredential(credentialResult.user);
+      await credentialResult.user.reload();
+      const refreshedUser = auth.currentUser || credentialResult.user;
+      if (!refreshedUser.emailVerified) {
+        setUnverifiedEmail(normalizedEmail);
+        await signOut(auth);
+        setError("Please verify your email to continue.");
+        return;
+      }
+      await linkPendingCredential(refreshedUser);
       router.replace("/(tabs)");
     } catch (authError) {
       setError(firebaseAuthMessage(authError, "login"));
@@ -108,6 +144,34 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    setError("");
+    setResetMessage("");
+    const normalizedEmail = normalizeEmail(email || unverifiedEmail);
+    if (!normalizedEmail || !isValidEmail(normalizedEmail) || !password) {
+      setError(
+        "Enter your email address and password to resend the verification email.",
+      );
+      return;
+    }
+    setLoading(true);
+    try {
+      const tempCred = await signInWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password,
+      );
+      await sendBrandedVerificationEmail(tempCred.user);
+      await signOut(auth);
+      setResetMessage("Verification link resent! Check your email inbox.");
+    } catch (authError) {
+      setError(firebaseAuthMessage(authError, "login"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogle = async () => {
     setError("");
     if (!googleClientIds.isConfigured) {
@@ -126,6 +190,7 @@ export default function LoginScreen() {
       setSocialLoading(false);
     }
   };
+
   const handleApple = async () => {
     setError("");
     setSocialLoading(true);
@@ -138,12 +203,13 @@ export default function LoginScreen() {
       setSocialLoading(false);
     }
   };
+
   const handlePasswordReset = async () => {
     setError("");
     setResetMessage("");
     const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) {
-      setError("Enter your email address first.");
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
+      setError("Enter a valid email address first.");
       return;
     }
     try {
@@ -153,13 +219,18 @@ export default function LoginScreen() {
       setError(firebaseAuthMessage(authError, "login"));
     }
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.logoContainer}>
             <Image
               source={require("../../../assets/images/idali-logo.png")}
@@ -208,6 +279,14 @@ export default function LoginScreen() {
           {!!error && <Text style={styles.errorText}>{error}</Text>}
           {!!resetMessage && (
             <Text style={styles.successText}>{resetMessage}</Text>
+          )}
+          {!!unverifiedEmail && (
+            <TouchableOpacity
+              onPress={handleResendVerification}
+              style={{ alignSelf: "flex-start", marginTop: 8 }}
+            >
+              <Text style={styles.footerLink}>Resend Verification Email</Text>
+            </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={handlePasswordReset}
@@ -266,7 +345,8 @@ export default function LoginScreen() {
               <Text style={styles.footerLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
-        </View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

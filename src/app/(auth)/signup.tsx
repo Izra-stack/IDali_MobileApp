@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import * as Google from "expo-auth-session/providers/google";
+import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
+  signOut,
   updateProfile,
 } from "firebase/auth";
 import { useEffect, useState } from "react";
@@ -21,13 +21,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../../../firebase/config";
-import { googleClientIds, signInWithApple, signInWithGoogleToken } from "../../services/socialAuth";
 import {
   firebaseAuthMessage,
   normalizeEmail,
   validateSignup,
   type FieldErrors,
 } from "../../services/authValidation";
+import { sendBrandedVerificationEmail } from "../../services/emailVerification";
+import {
+  googleClientIds,
+  signInWithApple,
+  signInWithGoogleToken,
+} from "../../services/socialAuth";
 import styles from "../../styles/auth/signup.styles";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -43,24 +48,45 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [socialLoading, setSocialLoading] = useState(false);
-  const [googleRequest, googleResponse, promptGoogle] = Google.useIdTokenAuthRequest({
-    webClientId: googleClientIds.web,
-    androidClientId: googleClientIds.android,
-    iosClientId: googleClientIds.ios,
-    selectAccount: true,
-  });
+  const [googleRequest, googleResponse, promptGoogle] =
+    Google.useIdTokenAuthRequest({
+      webClientId: googleClientIds.web,
+      androidClientId: googleClientIds.android,
+      iosClientId: googleClientIds.ios,
+      selectAccount: true,
+    });
 
   useEffect(() => {
     if (!googleResponse) return;
-    if (googleResponse.type === "cancel" || googleResponse.type === "dismiss") { setErrors({ login: "Google authentication was cancelled." }); setSocialLoading(false); return; }
-    if (googleResponse.type === "error") { setErrors({ login: "Google authentication could not be completed." }); setSocialLoading(false); return; }
-    if (googleResponse.type !== "success") { setSocialLoading(false); return; }
+    if (googleResponse.type === "cancel" || googleResponse.type === "dismiss") {
+      setErrors({ login: "Google authentication was cancelled." });
+      setSocialLoading(false);
+      return;
+    }
+    if (googleResponse.type === "error") {
+      setErrors({ login: "Google authentication could not be completed." });
+      setSocialLoading(false);
+      return;
+    }
+    if (googleResponse.type !== "success") {
+      setSocialLoading(false);
+      return;
+    }
     const idToken = googleResponse.params.id_token;
-    if (!idToken) { setErrors({ login: "Google did not return a valid identity token." }); setSocialLoading(false); return; }
+    if (!idToken) {
+      setErrors({ login: "Google did not return a valid identity token." });
+      setSocialLoading(false);
+      return;
+    }
     void (async () => {
-      try { await signInWithGoogleToken(idToken); router.replace("/(tabs)"); }
-      catch (authError) { setErrors({ login: firebaseAuthMessage(authError, "signup") }); }
-      finally { setSocialLoading(false); }
+      try {
+        await signInWithGoogleToken(idToken);
+        router.replace("/(tabs)");
+      } catch (authError) {
+        setErrors({ login: firebaseAuthMessage(authError, "signup") });
+      } finally {
+        setSocialLoading(false);
+      }
     })();
   }, [googleResponse, router]);
   const handleSignup = async () => {
@@ -76,16 +102,31 @@ export default function SignupScreen() {
     if (Object.keys(nextErrors).length) return;
     setLoading(true);
     try {
+      if (auth.currentUser) {
+        await signOut(auth);
+      }
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         normalizeEmail(email),
         password,
       );
-      await updateProfile(userCredential.user, {
-        displayName: fullName.trim(),
+
+      try {
+        await updateProfile(userCredential.user, {
+          displayName: fullName.trim(),
+        });
+      } catch {}
+
+      try {
+        await sendBrandedVerificationEmail(userCredential.user);
+      } catch {}
+
+      await signOut(auth);
+
+      router.replace({
+        pathname: "/(auth)/login",
+        params: { registered: "true", email: normalizeEmail(email) },
       });
-      await sendEmailVerification(userCredential.user);
-      router.replace("/(tabs)");
     } catch (authError) {
       setErrors({ login: firebaseAuthMessage(authError, "signup") });
     } finally {
@@ -94,16 +135,37 @@ export default function SignupScreen() {
   };
   const handleGoogle = async () => {
     setErrors({});
-    if (!googleClientIds.isConfigured) { setErrors({ login: "Google Sign In is not configured for this build." }); return; }
-    if (!googleRequest) { setErrors({ login: "Google Sign In is still loading. Please try again." }); return; }
+    if (!googleClientIds.isConfigured) {
+      setErrors({ login: "Google Sign In is not configured for this build." });
+      return;
+    }
+    if (!googleRequest) {
+      setErrors({
+        login: "Google Sign In is still loading. Please try again.",
+      });
+      return;
+    }
     setSocialLoading(true);
-    try { await promptGoogle(); } catch (authError) { setErrors({ login: firebaseAuthMessage(authError, "signup") }); setSocialLoading(false); }
+    try {
+      await promptGoogle();
+    } catch (authError) {
+      setErrors({ login: firebaseAuthMessage(authError, "signup") });
+      setSocialLoading(false);
+    }
   };
   const handleApple = async () => {
-    setErrors({}); setSocialLoading(true);
-    try { const result = await signInWithApple(); if (fullName.trim() && !result.user.displayName) await updateProfile(result.user, { displayName: fullName.trim() }); router.replace("/(tabs)"); }
-    catch (authError) { setErrors({ login: firebaseAuthMessage(authError, "signup") }); }
-    finally { setSocialLoading(false); }
+    setErrors({});
+    setSocialLoading(true);
+    try {
+      const result = await signInWithApple();
+      if (fullName.trim() && !result.user.displayName)
+        await updateProfile(result.user, { displayName: fullName.trim() });
+      router.replace("/(tabs)");
+    } catch (authError) {
+      setErrors({ login: firebaseAuthMessage(authError, "signup") });
+    } finally {
+      setSocialLoading(false);
+    }
   };
   const field = (
     label: string,
@@ -154,7 +216,7 @@ export default function SignupScreen() {
         style={styles.keyboardView}
       >
         <ScrollView
-          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -222,16 +284,34 @@ export default function SignupScreen() {
               <Text style={styles.signupButtonText}>Sign Up</Text>
             )}
           </TouchableOpacity>
-          <View style={styles.dividerContainer}><View style={styles.divider} /><Text style={styles.dividerText}>Or continue with</Text><View style={styles.divider} /></View>
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>Or continue with</Text>
+            <View style={styles.divider} />
+          </View>
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton} onPress={handleGoogle} disabled={loading || socialLoading}><Ionicons name="logo-google" size={20} color="#EA4335" /><Text style={styles.socialButtonText}>Continue with Google</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} onPress={handleApple} disabled={loading || socialLoading}><Ionicons name="logo-apple" size={20} color="#111827" /><Text style={styles.socialButtonText}>Continue with Apple</Text></TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogle}
+              disabled={loading || socialLoading}
+            >
+              <Ionicons name="logo-google" size={20} color="#EA4335" />
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleApple}
+              disabled={loading || socialLoading}
+            >
+              <Ionicons name="logo-apple" size={20} color="#111827" />
+              <Text style={styles.socialButtonText}>Continue with Apple</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.socialNotice}>
             <Ionicons name="lock-closed-outline" size={20} color="#3b74f6" />
             <Text style={styles.socialNoticeText}>
-              Social sign-in uses the same Firebase account system and will
-              link to an existing IDali account when appropriate.
+              Social sign-in uses the same Firebase account system and will link
+              to an existing IDali account when appropriate.
             </Text>
           </View>
           <View style={styles.footerContainer}>

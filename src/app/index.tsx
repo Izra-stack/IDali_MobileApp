@@ -1,9 +1,9 @@
-﻿import { View, Text, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import styles from '../styles/index.styles';
 import { hydrateSharedState } from '../SharedState';
@@ -16,10 +16,19 @@ export default function SplashScreen() {
   // Effect: wait for Firebase and draft hydration before enabling Continue.
   useEffect(() => {
     let mounted = true;
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       await hydrateSharedState();
       if (!mounted) return;
-      setUser(user);
+      if (
+        currentUser &&
+        !currentUser.emailVerified &&
+        currentUser.providerData.some((p) => p.providerId === 'password')
+      ) {
+        await signOut(auth);
+        setUser(null);
+      } else {
+        setUser(currentUser);
+      }
       setReady(true);
     });
 

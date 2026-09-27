@@ -1,13 +1,19 @@
-﻿import { StyleSheet } from 'react-native';
+import { StyleSheet } from "react-native";
 
 // Styles: login form layout and authentication actions.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   keyboardView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
   },
   content: {
     flex: 1,
@@ -15,7 +21,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   logo: {
@@ -24,71 +30,71 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: "#6b7280",
     marginBottom: 32,
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputContainer: {
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 8,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     borderRadius: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     paddingHorizontal: 16,
     height: 52,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#111827',
+    color: "#111827",
   },
   inputIcon: {
     marginLeft: 8,
   },
   loginButton: {
-    backgroundColor: '#3b74f6',
+    backgroundColor: "#3b74f6",
     borderRadius: 26,
     height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 24,
     marginBottom: 32,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 24,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: "#e5e7eb",
   },
   dividerText: {
     marginHorizontal: 16,
-    color: '#6b7280',
+    color: "#6b7280",
     fontSize: 14,
   },
   socialContainer: {
@@ -99,35 +105,51 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
     gap: 9,
   },
   socialButtonText: {
-    color: '#374151',
+    color: "#374151",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   footerText: {
-    color: '#6b7280',
+    color: "#6b7280",
     fontSize: 14,
   },
   footerLink: {
-    color: '#3b74f6',
+    color: "#3b74f6",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-  errorText: { color: '#dc2626', fontSize: 13, marginTop: 6 },
-  successText: { color: '#15803d', fontSize: 13, marginTop: 6 },
-  socialNotice: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 32, padding: 12, borderRadius: 12, backgroundColor: '#eff6ff' },
-  socialNoticeText: { flex: 1, color: '#1d4ed8', fontSize: 12, lineHeight: 17 },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 13,
+    marginTop: 6,
+  },
+  successText: {
+    color: "#15803d",
+    fontSize: 13,
+    marginTop: 6,
+  },
+  socialNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 32,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#eff6ff",
+  },
+  socialNoticeText: { flex: 1, color: "#1d4ed8", fontSize: 12, lineHeight: 17 },
 });
 
 export default styles;

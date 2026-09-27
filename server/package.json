@@ -1,0 +1,12 @@
+{
+  "name": "idali-background-removal-server",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test"
+  }
+}

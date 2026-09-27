@@ -44,10 +44,14 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "concurrently": "^10.0.5",
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "dev": "concurrently \"npm run server\" \"expo start -c\"",
     "start": "expo start",
+    "server": "npm --prefix server start",
+    "server:test": "npm --prefix server test",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",

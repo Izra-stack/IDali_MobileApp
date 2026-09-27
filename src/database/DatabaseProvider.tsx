@@ -1,8 +1,20 @@
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import React from 'react';
+import { Platform } from 'react-native';
+
+const WebDummyDatabase = {
+  execAsync: async () => {},
+  runAsync: async () => ({ lastInsertRowId: 1, changes: 1 }),
+  getFirstAsync: async () => null,
+  getAllAsync: async () => [],
+  eachAsync: async () => {},
+} as unknown as ReturnType<typeof useSQLiteContext>;
 
 export function DatabaseProvider({ children }: { children: React.ReactNode }) {
-  // Database initialization: create tables and indexes before screens query them.
+  if (Platform.OS === 'web') {
+    return <>{children}</>;
+  }
+
   return (
     <SQLiteProvider
       databaseName="idali.db"
@@ -40,5 +52,8 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
 // Custom hook to use the database
 export function useDatabase() {
+  if (Platform.OS === 'web') {
+    return WebDummyDatabase;
+  }
   return useSQLiteContext();
 }
