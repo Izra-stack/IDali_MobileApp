@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -45,6 +46,7 @@ export default function SignupScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [socialLoading, setSocialLoading] = useState(false);
@@ -135,19 +137,13 @@ export default function SignupScreen() {
   };
   const handleGoogle = async () => {
     setErrors({});
-    if (!googleClientIds.isConfigured) {
-      setErrors({ login: "Google Sign In is not configured for this build." });
-      return;
-    }
-    if (!googleRequest) {
-      setErrors({
-        login: "Google Sign In is still loading. Please try again.",
-      });
-      return;
-    }
     setSocialLoading(true);
     try {
-      await promptGoogle();
+      if (googleRequest) {
+        await promptGoogle();
+      } else {
+        await promptGoogle();
+      }
     } catch (authError) {
       setErrors({ login: firebaseAuthMessage(authError, "signup") });
       setSocialLoading(false);
@@ -173,7 +169,9 @@ export default function SignupScreen() {
     onChangeText: (value: string) => void,
     errorKey: keyof FieldErrors,
     placeholder: string,
-    secureTextEntry = false,
+    isPasswordField = false,
+    isPasswordVisible = false,
+    onTogglePassword?: () => void,
   ) => (
     <View style={styles.inputContainer}>
       <Text style={styles.inputLabel}>{label}</Text>
@@ -188,15 +186,15 @@ export default function SignupScreen() {
           placeholder={placeholder}
           value={value}
           onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={isPasswordField && !isPasswordVisible}
           autoCapitalize={errorKey === "email" ? "none" : "words"}
           autoCorrect={false}
           keyboardType={errorKey === "email" ? "email-address" : "default"}
         />
-        {secureTextEntry && (
-          <TouchableOpacity onPress={() => setShowPassword((value) => !value)}>
+        {isPasswordField && (
+          <TouchableOpacity onPress={onTogglePassword}>
             <Ionicons
-              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
               size={20}
               color="#9ca3af"
               style={styles.inputIcon}
@@ -245,7 +243,9 @@ export default function SignupScreen() {
             setPassword,
             "password",
             "At least 8 characters",
-            !showPassword,
+            true,
+            showPassword,
+            () => setShowPassword((v) => !v),
           )}
           {field(
             "Confirm Password",
@@ -253,7 +253,9 @@ export default function SignupScreen() {
             setConfirmPassword,
             "confirmPassword",
             "Re-enter your password",
-            !showPassword,
+            true,
+            showConfirmPassword,
+            () => setShowConfirmPassword((v) => !v),
           )}
           <Text style={styles.passwordHint}>
             Password must contain at least 8 characters, one letter, and one
@@ -298,14 +300,16 @@ export default function SignupScreen() {
               <Ionicons name="logo-google" size={20} color="#EA4335" />
               <Text style={styles.socialButtonText}>Continue with Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={handleApple}
-              disabled={loading || socialLoading}
-            >
-              <Ionicons name="logo-apple" size={20} color="#111827" />
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
-            </TouchableOpacity>
+            {Platform.OS === "ios" && (
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleApple}
+                disabled={loading || socialLoading}
+              >
+                <Ionicons name="logo-apple" size={20} color="#111827" />
+                <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.socialNotice}>
             <Ionicons name="lock-closed-outline" size={20} color="#3b74f6" />

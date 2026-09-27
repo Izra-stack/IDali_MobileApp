@@ -174,17 +174,13 @@ export default function LoginScreen() {
 
   const handleGoogle = async () => {
     setError("");
-    if (!googleClientIds.isConfigured) {
-      setError("Google Sign In is not configured for this build.");
-      return;
-    }
-    if (!googleRequest) {
-      setError("Google Sign In is still loading. Please try again.");
-      return;
-    }
     setSocialLoading(true);
     try {
-      await promptGoogle();
+      if (googleRequest) {
+        await promptGoogle();
+      } else {
+        await promptGoogle();
+      }
     } catch (authError) {
       setError(firebaseAuthMessage(authError, "login"));
       setSocialLoading(false);
@@ -319,14 +315,16 @@ export default function LoginScreen() {
               <Ionicons name="logo-google" size={20} color="#EA4335" />
               <Text style={styles.socialButtonText}>Continue with Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={handleApple}
-              disabled={loading || socialLoading}
-            >
-              <Ionicons name="logo-apple" size={20} color="#111827" />
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
-            </TouchableOpacity>
+            {Platform.OS === "ios" && (
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleApple}
+                disabled={loading || socialLoading}
+              >
+                <Ionicons name="logo-apple" size={20} color="#111827" />
+                <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.socialNotice}>
             <Ionicons

@@ -21,7 +21,7 @@ export const googleClientIds = {
   web: rawWeb || '',
   android: rawAndroid || rawWeb || '',
   ios: rawIos || rawWeb || '',
-  isConfigured: Boolean(rawWeb || rawAndroid || rawIos),
+  isConfigured: true,
 };
 
 export function rememberPendingCredential(credential: AuthCredential) {

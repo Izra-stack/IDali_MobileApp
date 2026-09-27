@@ -1,4 +1,4 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { removeBackground } from "../../services/removeBackground";
@@ -122,7 +122,7 @@ export default function EditorScreen() {
   const cropModeRef = useRef<CropMode | null>(null);
   const [textOpen, setTextOpen] = useState(false);
   const [overlayText, setOverlayText] = useState("");
-  const [textFont, setTextFont] = useState("system");
+  const [textFont, setTextFont] = useState("Helvetica");
   const [textSize, setTextSize] = useState(20);
   const [textColor, setTextColor] = useState("#111827");
   const [textBackground, setTextBackground] = useState<string | null>(
@@ -131,15 +131,16 @@ export default function EditorScreen() {
   const [textColorInput, setTextColorInput] = useState("#111827");
   const [backgroundColorInput, setBackgroundColorInput] = useState("#ffffff");
   const fontOptions = [
-    { label: "System", value: "system" },
-    { label: "Sans", value: "sans-serif" },
-    { label: "Light", value: "sans-serif-light" },
-    { label: "Medium", value: "sans-serif-medium" },
-    { label: "Condensed", value: "sans-serif-condensed" },
-    { label: "Serif", value: "serif" },
-    { label: "Mono", value: "monospace" },
-    { label: "Thin", value: "sans-serif-thin" },
-    { label: "Black", value: "sans-serif-black" },
+    { label: "Helvetica", value: "Helvetica" },
+    { label: "Arial", value: "Arial" },
+    { label: "Futura", value: "Futura" },
+    { label: "Times New Roman", value: "Times New Roman" },
+    { label: "Garamond", value: "Garamond" },
+    { label: "Roboto", value: "Roboto" },
+    { label: "Gotham", value: "Gotham" },
+    { label: "Montserrat", value: "Montserrat" },
+    { label: "Proxima Nova", value: "Proxima Nova" },
+    { label: "Verdana", value: "Verdana" },
   ];
   const commonFontSizes = [
     8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72,
@@ -540,7 +541,7 @@ export default function EditorScreen() {
                       padding: 8,
                       textAlign: "center",
                       fontSize: textSize,
-                      fontFamily: textFont === "system" ? undefined : textFont,
+                      fontFamily: textFont,
                       fontWeight: "600",
                     }}
                   >
@@ -762,8 +763,7 @@ export default function EditorScreen() {
                     <Text
                       style={{
                         color: "#374151",
-                        fontFamily:
-                          font.value === "system" ? undefined : font.value,
+                        fontFamily: font.value,
                       }}
                     >
                       {font.label}
