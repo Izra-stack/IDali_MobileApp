@@ -57,19 +57,3 @@ into one simple mobile application.
 ## Status
 
  **Currently in development**
-
-## Background-removal service
-
-Background removal is handled by the backend in `server/`. remove.bg is tried first. If it is out of quota, rate-limited, temporarily unavailable, or otherwise fails, the backend tries Magic Hour. The app receives the processed PNG from whichever provider succeeds; it only receives a generic error when both providers fail.
-
-Run the backend from the project root with:
-
-```bash
-npm run server
-```
-
-Before starting it, copy `server/.env.example` to `server/.env` and set `REMOVE_BG_API_KEY` and `MAGIC_HOUR_API_KEY` there, or provide those variables through the deployment platform's secret manager. The keys never belong in the Expo app.
-
-For the mobile app, copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_IDALI_API_URL` to the reachable backend URL. This is only the public server URL, not an API key. Restart Expo after changing it.
-
-The current API keys were shared in chat, so rotate both provider keys before using this integration in production.
