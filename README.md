@@ -46,4 +46,4 @@ into one simple mobile application.
 
 ## Status
 
- **Currently in development**
+ **Currently in development around 95%**
