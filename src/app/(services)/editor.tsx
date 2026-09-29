@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -41,19 +41,23 @@ function AdjustmentSlider({
 }) {
   const { width } = useWindowDimensions();
   const trackWidth = Math.max(120, Math.min(260, width - 194));
-  const updateFromX = (locationX: number) => {
-    const next = Math.max(-1, Math.min(1, (locationX / trackWidth) * 2 - 1));
+
+  const updateFromX = (x: number) => {
+    const clampedX = Math.max(0, Math.min(trackWidth, x));
+    const next = (clampedX / trackWidth) * 2 - 1;
     onChange(Math.round(next * 100) / 100);
   };
+
   const responder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX),
-      onPanResponderMove: (event) => updateFromX(event.nativeEvent.locationX),
+      onPanResponderGrant: (evt) => updateFromX(evt.nativeEvent.locationX),
+      onPanResponderMove: (evt) => updateFromX(evt.nativeEvent.locationX),
     }),
   ).current;
-  const thumbPosition = ((value + 1) / 2) * trackWidth;
+
+  const thumbPosition = Math.max(0, Math.min(trackWidth, ((value + 1) / 2) * trackWidth));
 
   return (
     <View
@@ -62,6 +66,7 @@ function AdjustmentSlider({
       accessibilityRole="adjustable"
     >
       <View
+        pointerEvents="none"
         style={{
           height: 5,
           borderRadius: 3,
@@ -78,9 +83,10 @@ function AdjustmentSlider({
         />
       </View>
       <View
+        pointerEvents="none"
         style={{
           position: "absolute",
-          left: thumbPosition - 10,
+          left: Math.max(0, Math.min(trackWidth - 20, thumbPosition - 10)),
           width: 20,
           height: 20,
           borderRadius: 10,
@@ -121,26 +127,37 @@ export default function EditorScreen() {
   const cropStartRef = useRef<CropRect | null>(null);
   const cropModeRef = useRef<CropMode | null>(null);
   const [textOpen, setTextOpen] = useState(false);
-  const [overlayText, setOverlayText] = useState("");
-  const [textFont, setTextFont] = useState("Helvetica");
-  const [textSize, setTextSize] = useState(20);
-  const [textColor, setTextColor] = useState("#111827");
+  const [overlayText, setOverlayText] = useState(SharedState.photoText ?? "");
+  const [textFont, setTextFont] = useState(SharedState.textFont ?? "system");
+  const [textSize, setTextSize] = useState(SharedState.textSize ?? 20);
+  const [textColor, setTextColor] = useState(SharedState.textColor ?? "#111827");
   const [textBackground, setTextBackground] = useState<string | null>(
-    "rgba(255,255,255,0.75)",
+    SharedState.textBackground ?? null,
   );
-  const [textColorInput, setTextColorInput] = useState("#111827");
-  const [backgroundColorInput, setBackgroundColorInput] = useState("#ffffff");
+  const [colorWheelTarget, setColorWheelTarget] = useState<"text" | "bg" | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      setImageUri(SharedState.imageUri);
+      setBrightness(SharedState.brightness ?? 0);
+      setContrast(SharedState.contrast ?? 0);
+      setOverlayText(SharedState.photoText ?? "");
+      setTextFont(SharedState.textFont ?? "system");
+      setTextSize(SharedState.textSize ?? 20);
+      setTextColor(SharedState.textColor ?? "#111827");
+      setTextBackground(SharedState.textBackground ?? null);
+    }, []),
+  );
   const fontOptions = [
-    { label: "Helvetica", value: "Helvetica" },
-    { label: "Arial", value: "Arial" },
-    { label: "Futura", value: "Futura" },
-    { label: "Times New Roman", value: "Times New Roman" },
-    { label: "Garamond", value: "Garamond" },
-    { label: "Roboto", value: "Roboto" },
-    { label: "Gotham", value: "Gotham" },
-    { label: "Montserrat", value: "Montserrat" },
-    { label: "Proxima Nova", value: "Proxima Nova" },
-    { label: "Verdana", value: "Verdana" },
+    { label: "System", value: "system" },
+    { label: "Sans", value: "sans-serif" },
+    { label: "Light", value: "sans-serif-light" },
+    { label: "Medium", value: "sans-serif-medium" },
+    { label: "Condensed", value: "sans-serif-condensed" },
+    { label: "Serif", value: "serif" },
+    { label: "Mono", value: "monospace" },
+    { label: "Thin", value: "sans-serif-thin" },
+    { label: "Black", value: "sans-serif-black" },
   ];
   const commonFontSizes = [
     8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72,
@@ -463,7 +480,15 @@ export default function EditorScreen() {
         <Text style={styles.headerTitle}>Edit Photo</Text>
         <TouchableOpacity
           style={styles.nextButton}
-          onPress={() => router.push("/(services)/layout-settings")}
+          onPress={() => {
+            SharedState.photoText = overlayText;
+            SharedState.textFont = textFont;
+            SharedState.textSize = textSize;
+            SharedState.textColor = textColor;
+            SharedState.textBackground = textBackground;
+            void persistSharedState();
+            router.push("/(services)/layout-settings");
+          }}
         >
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
@@ -541,7 +566,7 @@ export default function EditorScreen() {
                       padding: 8,
                       textAlign: "center",
                       fontSize: textSize,
-                      fontFamily: textFont,
+                      fontFamily: textFont === "system" ? undefined : textFont,
                       fontWeight: "600",
                     }}
                   >
@@ -763,7 +788,8 @@ export default function EditorScreen() {
                     <Text
                       style={{
                         color: "#374151",
-                        fontFamily: font.value,
+                        fontFamily:
+                          font.value === "system" ? undefined : font.value,
                       }}
                     >
                       {font.label}
@@ -814,7 +840,27 @@ export default function EditorScreen() {
               >
                 Text color
               </Text>
-              <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 10, paddingVertical: 8, alignItems: "center" }}
+              >
+                <TouchableOpacity
+                  onPress={() => setColorWheelTarget("text")}
+                  accessibilityLabel="Open Color Wheel for Text Color"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: "#eff6ff",
+                    borderWidth: 1.5,
+                    borderColor: "#3b74f6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="color-palette" size={20} color="#2563eb" />
+                </TouchableOpacity>
                 {[
                   "#111827",
                   "#ffffff",
@@ -832,13 +878,14 @@ export default function EditorScreen() {
                   "#9333ea",
                   "#7c3aed",
                   "#92400e",
+                  "#451a03",
+                  "#0284c7",
+                  "#4f46e5",
+                  "#059669",
                 ].map((color) => (
                   <TouchableOpacity
                     key={color}
-                    onPress={() => {
-                      setTextColor(color);
-                      setTextColorInput(color);
-                    }}
+                    onPress={() => setTextColor(color)}
                     accessibilityLabel={`Text color ${color}`}
                     style={{
                       width: 28,
@@ -850,32 +897,17 @@ export default function EditorScreen() {
                     }}
                   />
                 ))}
-              </View>
-              <TextInput
-                value={textColorInput}
-                onChangeText={(value) => {
-                  setTextColorInput(value);
-                  if (isHexColor(value)) setTextColor(value);
-                }}
-                autoCapitalize="none"
-                placeholder="#RRGGBB"
-                style={{
-                  height: 40,
-                  marginTop: 8,
-                  borderWidth: 1,
-                  borderColor: "#d1d5db",
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  color: "#111827",
-                  backgroundColor: "#ffffff",
-                }}
-              />
+              </ScrollView>
               <Text
                 style={{ marginTop: 14, color: "#374151", fontWeight: "600" }}
               >
                 Text background
               </Text>
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 8, alignItems: "center" }}
+              >
                 <TouchableOpacity
                   onPress={() => setTextBackground(null)}
                   style={{
@@ -887,6 +919,22 @@ export default function EditorScreen() {
                   }}
                 >
                   <Text style={{ color: "#374151" }}>None</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setColorWheelTarget("bg")}
+                  accessibilityLabel="Open Color Wheel for Text Background"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: "#eff6ff",
+                    borderWidth: 1.5,
+                    borderColor: "#3b74f6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="color-palette" size={20} color="#2563eb" />
                 </TouchableOpacity>
                 {[
                   "rgba(255,255,255,0.75)",
@@ -900,6 +948,10 @@ export default function EditorScreen() {
                   "rgba(220,38,38,0.82)",
                   "rgba(219,39,119,0.82)",
                   "rgba(124,58,237,0.82)",
+                  "rgba(0,0,0,0.9)",
+                  "rgba(255,255,255,1)",
+                  "rgba(243,244,246,1)",
+                  "rgba(254,243,199,0.9)",
                 ].map((color) => (
                   <TouchableOpacity
                     key={color}
@@ -916,26 +968,7 @@ export default function EditorScreen() {
                     }}
                   />
                 ))}
-              </View>
-              <TextInput
-                value={backgroundColorInput}
-                onChangeText={(value) => {
-                  setBackgroundColorInput(value);
-                  if (isHexColor(value)) setTextBackground(value);
-                }}
-                autoCapitalize="none"
-                placeholder="#RRGGBB"
-                style={{
-                  height: 40,
-                  marginTop: 8,
-                  borderWidth: 1,
-                  borderColor: "#d1d5db",
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  color: "#111827",
-                  backgroundColor: "#ffffff",
-                }}
-              />
+              </ScrollView>
               <Text style={{ marginTop: 8, color: "#6b7280", fontSize: 12 }}>
                 Drag the text directly on the photo to position it.
               </Text>
@@ -943,6 +976,112 @@ export default function EditorScreen() {
           )}
         </View>
       </ScrollView>
+      <Modal
+        visible={colorWheelTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setColorWheelTarget(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setColorWheelTarget(null)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 340,
+              backgroundColor: "#ffffff",
+              borderRadius: 20,
+              padding: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 5,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}
+              >
+                Select {colorWheelTarget === "text" ? "Text Color" : "Background Color"}
+              </Text>
+              <TouchableOpacity onPress={() => setColorWheelTarget(null)}>
+                <Ionicons name="close-circle" size={26} color="#9ca3af" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+                justifyContent: "center",
+                paddingVertical: 10,
+              }}
+            >
+              {[
+                "#000000", "#111827", "#1f2937", "#374151", "#4b5563", "#6b7280", "#9ca3af", "#d1d5db", "#e5e7eb", "#ffffff",
+                "#ef4444", "#dc2626", "#b91c1c", "#991b1b", "#f97316", "#ea580c", "#c2410c", "#f59e0b", "#d97706", "#b45309",
+                "#eab308", "#ca8a04", "#84cc16", "#65a30d", "#22c55e", "#16a34a", "#15803d", "#10b981", "#059669", "#047857",
+                "#14b8a6", "#0d9488", "#06b6d4", "#0891b2", "#0284c7", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#6366f1",
+                "#4f46e5", "#4338ca", "#8b5cf6", "#7c3aed", "#6d28d9", "#a855f7", "#9333ea", "#7e22ce", "#ec4899", "#db2777",
+                "#be185d", "#f43f5e", "#e11d48", "#be123c", "#78350f", "#451a03", "#312e81", "#831843", "#064e3b", "#0f172a"
+              ].map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => {
+                    if (colorWheelTarget === "text") {
+                      setTextColor(c);
+                    } else {
+                      setTextBackground(c);
+                    }
+                    setColorWheelTarget(null);
+                  }}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 19,
+                    backgroundColor: c,
+                    borderWidth: 2,
+                    borderColor: "#d1d5db",
+                  }}
+                />
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => setColorWheelTarget(null)}
+              style={{
+                marginTop: 16,
+                paddingVertical: 12,
+                backgroundColor: "#f3f4f6",
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontWeight: "600", color: "#374151" }}>Done</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       <Modal
         visible={processing}
         transparent

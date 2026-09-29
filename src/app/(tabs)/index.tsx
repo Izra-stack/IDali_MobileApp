@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../../../firebase/config";
-import { persistSharedState, SharedState } from "../../SharedState";
+import { startNewSession, SharedState } from "../../SharedState";
 import { useDatabase } from "../../database/DatabaseProvider";
 import { getLayouts, SavedLayout } from "../../database/queries";
 import styles from "../../styles/tabs/index.styles";
@@ -45,8 +45,7 @@ export default function DashboardScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      SharedState.imageUri = result.assets[0].uri;
-      await persistSharedState();
+      await startNewSession(result.assets[0].uri);
       router.push("/(services)/editor");
     }
   };

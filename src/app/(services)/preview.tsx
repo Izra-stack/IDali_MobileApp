@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants, { AppOwnership } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Print from 'expo-print';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -15,10 +15,75 @@ import { getPackagePlan, saveLayout } from '../../database/queries';
 import { SharedState } from '../../SharedState';
 import styles from '../../styles/services/preview.styles';
 
+const normalizeLocalFileUri = (uri: string) => {
+  const value = uri.trim();
+  if (!value) throw new Error('The generated file URI is empty.');
+  if (/^(https?:|content:|data:)/i.test(value)) {
+    throw new Error('The generated file is not an app-readable local file.');
+  }
+  if (value.startsWith('file://')) return value;
+  if (value.startsWith('/')) return `file://${value}`;
+  throw new Error('The generated file URI is not a supported local file URI.');
+};
+
+const assertReadableFile = (file: File, label: string) => {
+  let info;
+  try {
+    info = file.info();
+  } catch {
+    throw new Error(`${label} was created but cannot be read by the app.`);
+  }
+  if (!info.exists || !info.size || info.size <= 0) {
+    throw new Error(`${label} was not created as a readable file.`);
+  }
+  return normalizeLocalFileUri(file.uri);
+};
+
+const copyToReadableFile = async (sourceUri: string, destination: File, label: string) => {
+  const normalizedSourceUri = normalizeLocalFileUri(sourceUri);
+  const source = new File(normalizedSourceUri);
+  if (!source.exists) throw new Error(`${label} source file is missing.`);
+  if (destination.exists) destination.delete();
+  await source.copy(destination);
+  assertReadableFile(destination, label);
+  return destination;
+};
+
+const persistPrintedPdf = async (result: { uri?: string; base64?: string }) => {
+  const destination = new File(Paths.cache, `IDali_Layout_${Date.now()}.pdf`);
+  if (destination.exists) destination.delete();
+
+  if (result.base64) {
+    destination.write(result.base64, { encoding: 'base64' });
+  } else if (result.uri) {
+    await copyToReadableFile(result.uri, destination, 'Generated PDF');
+  } else {
+    throw new Error('PDF generation returned no readable file data.');
+  }
+
+  assertReadableFile(destination, 'Generated PDF');
+  return destination;
+};
+
+const shareLocalFile = async (file: File, mimeType: string, dialogTitle: string) => {
+  const uri = assertReadableFile(file, 'Generated file');
+  if (!(await Sharing.isAvailableAsync())) return false;
+  await Sharing.shareAsync(uri, {
+    mimeType,
+    dialogTitle,
+    UTI: mimeType === 'application/pdf' ? 'com.adobe.pdf' : 'public.png',
+  });
+  return true;
+};
+
+const isCancellationError = (error: unknown) =>
+  /cancel|canceled|cancelled|dismiss/i.test(error instanceof Error ? error.message : String(error));
+
 export default function PreviewScreen() {
   const router = useRouter();
   const db = useDatabase();
   const offscreenRef = useRef<View>(null);
+  const operationInFlightRef = useRef(false);
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -28,6 +93,19 @@ export default function PreviewScreen() {
   const bgColor = SharedState.bgColor;
   const numberOfCopies = Math.max(1, SharedState.numberOfCopies || 1);
   const plan = getPackagePlan(SharedState.packageId, idSize || '2x2 inches', paperSize || 'A4');
+  const isExpoGo = Constants.appOwnership === AppOwnership.Expo;
+
+  const beginOperation = () => {
+    if (operationInFlightRef.current) return false;
+    operationInFlightRef.current = true;
+    setIsProcessing(true);
+    return true;
+  };
+
+  const endOperation = () => {
+    operationInFlightRef.current = false;
+    setIsProcessing(false);
+  };
 
   const captureLayoutImage = async () => {
     if (!offscreenRef.current) return null;
@@ -48,16 +126,14 @@ export default function PreviewScreen() {
       Alert.alert('Unable to save', 'Please select an image and sign in again.');
       return;
     }
-    setIsProcessing(true);
+    if (!beginOperation()) return;
     try {
       const uri = await captureLayoutImage();
       let layoutUri = null;
       if (uri) {
-        const filename = `layout_${Date.now()}.png`;
-        const destFile = new File(Paths.document, filename);
-        const sourceFile = new File(uri);
-        await sourceFile.copy(destFile);
-        layoutUri = destFile.uri;
+        const layoutFile = new File(Paths.document, `layout_${Date.now()}.png`);
+        await copyToReadableFile(uri, layoutFile, 'Layout image');
+        layoutUri = layoutFile.uri;
       }
 
       await saveLayout(db, {
@@ -71,9 +147,35 @@ export default function PreviewScreen() {
       });
       router.replace('/(tabs)');
     } catch (e) {
+      console.error('Local layout save failed:', e);
       Alert.alert('Save failed', 'The layout could not be saved locally.');
     } finally {
-      setIsProcessing(false);
+      endOperation();
+    }
+  };
+
+  const saveExportedLayout = async () => {
+    if (!imageUri || !auth.currentUser) return;
+    try {
+      const uri = await captureLayoutImage();
+      let layoutUri = null;
+      if (uri) {
+        const layoutFile = new File(Paths.document, `layout_${Date.now()}.png`);
+        await copyToReadableFile(uri, layoutFile, 'Layout image');
+        layoutUri = layoutFile.uri;
+      }
+
+      await saveLayout(db, {
+        user_id: auth.currentUser.uid,
+        photo_uri: imageUri,
+        id_size: idSize || '2x2',
+        paper_size: paperSize || 'A4',
+        background_color: bgColor || 'White',
+        package_id: SharedState.packageId || 'a4-package',
+        layout_uri: layoutUri,
+      });
+    } catch (e) {
+      console.error('Auto-saving exported layout failed:', e);
     }
   };
 
@@ -90,14 +192,26 @@ export default function PreviewScreen() {
     }
     const imgSrc = `data:image/jpeg;base64,${base64Image}`;
 
+    const hasText = !!SharedState.photoText?.trim();
+    const photoText = SharedState.photoText ?? '';
+    const textColor = SharedState.textColor ?? '#111827';
+    const textBg = SharedState.textBackground ?? '#ffffff';
+    const textFont = SharedState.textFont === 'system' ? 'sans-serif' : (SharedState.textFont ?? 'sans-serif');
+
     let photosHtml = '';
     const slots = (plan.slots ?? []).slice(0, plan.copies);
     for (const slot of slots) {
       const left = slot.left;
       const top = slot.top;
+      const textHtml = hasText
+        ? `<div style="width: 100%; background-color: ${textBg}; color: ${textColor}; font-family: ${textFont}; font-size: 8pt; font-weight: 600; text-align: center; padding: 2px 0; border-top: 1px solid #e5e7eb; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photoText}</div>`
+        : '';
       photosHtml += `
-        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${slot.photoWidth}mm; height: ${slot.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box;">
-          <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: contain;" />
+        <div style="position: absolute; left: ${left}mm; top: ${top}mm; width: ${slot.photoWidth}mm; height: ${slot.photoHeight}mm; background-color: white; border: 1px solid #d1d5db; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="flex: 1; width: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>
+          ${textHtml}
         </div>
       `;
     }
@@ -128,80 +242,147 @@ export default function PreviewScreen() {
   };
 
   const handleExportPDF = async () => {
-    setIsProcessing(true);
+    if (!beginOperation()) return;
     setExportModalVisible(false);
     try {
       const html = await generateHTML();
       if (!html) throw new Error('HTML generation failed silently');
 
       const pointsPerMm = 72 / 25.4;
-      const { uri } = await Print.printToFileAsync({
+      const printResult = await Print.printToFileAsync({
         html,
         width: plan.paperWidth * pointsPerMm,
         height: plan.paperHeight * pointsPerMm,
+        base64: true,
       });
 
-      // Move to a readable cache directory for sharing
-      const pdfFileName = `IDali_Layout_${Date.now()}.pdf`;
-      const destFile = new File(Paths.cache, pdfFileName);
-      const sourceFile = new File(uri);
-      await sourceFile.copy(destFile);
-
-      if (!destFile.exists) {
-        throw new Error('PDF file was not created successfully');
-      }
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(destFile.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+      const pdfFile = await persistPrintedPdf(printResult);
+      const shared = await shareLocalFile(pdfFile, 'application/pdf', 'Share IDali PDF');
+      if (!shared) {
+        Alert.alert(
+          'PDF Ready',
+          'The PDF was generated, but sharing is unavailable on this device. Please try a development build or another device with a share service.',
+        );
       } else {
-        Alert.alert('Success', 'PDF generated, but sharing is not available on this device.');
+        await saveExportedLayout();
+        router.replace('/(tabs)');
       }
     } catch (e) {
-      const err = e;
+      console.error('PDF export failed:', e);
       Alert.alert(
-        'Error',
-        `Could not generate PDF: ${err && typeof err === 'object' && 'message' in err ? err.message : String(err)}`,
+        isCancellationError(e) ? 'Export Canceled' : 'PDF Export Failed',
+        isCancellationError(e)
+          ? 'The share sheet was closed before the PDF was shared.'
+          : 'The PDF could not be prepared as a readable local file. Please try again.',
       );
     } finally {
-      setIsProcessing(false);
+      endOperation();
     }
   };
 
   const handleSaveToGallery = async () => {
-    setIsProcessing(true);
+    if (!beginOperation()) return;
     setExportModalVisible(false);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Cannot save image without permission.');
+      const uri = await captureLayoutImage();
+      if (!uri) throw new Error('Could not render layout image preview for export');
+      const imageFile = await copyToReadableFile(
+        uri,
+        new File(Paths.cache, `IDali_Layout_${Date.now()}.png`),
+        'Generated image',
+      );
+
+      if (isExpoGo) {
+        try {
+          const shared = await shareLocalFile(imageFile, 'image/png', 'Save IDali image');
+          if (shared) {
+            Alert.alert(
+              'Choose a Save Location',
+              'Expo Go cannot save directly to the gallery. Choose Photos, Gallery, or Files from the share sheet.',
+            );
+            await saveExportedLayout();
+            router.replace('/(tabs)');
+            return;
+          }
+        } catch (shareError) {
+          console.error('Expo Go image fallback failed:', shareError);
+        }
+        Alert.alert(
+          'Gallery Access Unavailable',
+          'Expo Go cannot provide direct gallery access on this Android version. Use a development build or enable a system share service.',
+        );
         return;
       }
-      const uri = await captureLayoutImage();
-      if (!uri) throw new Error('Could not capture image');
-      await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert('Success', 'Layout saved to gallery!');
-    } catch {
-      Alert.alert('Error', 'Could not save to gallery.');
+
+      try {
+        const mediaLibrary = await import('expo-media-library');
+        let permission = await mediaLibrary.getPermissionsAsync(false, ['photo']);
+        if (!permission.granted && permission.canAskAgain) {
+          permission = await mediaLibrary.requestPermissionsAsync(false, ['photo']);
+        }
+        if (!permission.granted) throw new Error('Photo permission was denied.');
+        await mediaLibrary.Asset.create(imageFile.uri);
+        Alert.alert('Success', 'Layout saved to gallery!');
+        await saveExportedLayout();
+        router.replace('/(tabs)');
+      } catch (mediaLibraryError) {
+        console.error('Direct gallery save failed:', mediaLibraryError);
+        try {
+          const shared = await shareLocalFile(imageFile, 'image/png', 'Save IDali image');
+          if (shared) {
+            Alert.alert(
+              'Gallery Access Unavailable',
+              'Direct gallery access is unavailable here. Choose Photos, Gallery, or Files from the share sheet, or install a development build for direct saving.',
+            );
+            await saveExportedLayout();
+            router.replace('/(tabs)');
+            return;
+          }
+        } catch (shareError) {
+          console.error('Image share fallback failed:', shareError);
+        }
+        throw new Error('Direct gallery access and system sharing are unavailable.');
+      }
+    } catch (e) {
+      console.error('Gallery export failed:', e);
+      Alert.alert(
+        isCancellationError(e) ? 'Save Canceled' : 'Save Unavailable',
+        isCancellationError(e)
+          ? 'No image was saved.'
+          : 'The layout could not be saved. Use the share sheet to choose Photos, Gallery, or Files, or use a development build for direct gallery saving.',
+      );
     } finally {
-      setIsProcessing(false);
+      endOperation();
     }
   };
 
   const handleShareImage = async () => {
-    setIsProcessing(true);
+    if (!beginOperation()) return;
     setExportModalVisible(false);
     try {
       const uri = await captureLayoutImage();
       if (!uri) throw new Error('Could not capture image');
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+      const imageFile = await copyToReadableFile(
+        uri,
+        new File(Paths.cache, `IDali_Layout_${Date.now()}.png`),
+        'Generated image',
+      );
+      if (!(await shareLocalFile(imageFile, 'image/png', 'Share IDali image'))) {
+        Alert.alert('Sharing Unavailable', 'Image sharing is unavailable on this device.');
       } else {
-        Alert.alert('Error', 'Sharing is not available on this device.');
+        await saveExportedLayout();
+        router.replace('/(tabs)');
       }
-    } catch {
-      Alert.alert('Error', 'Could not share image.');
+    } catch (e) {
+      console.error('Image sharing failed:', e);
+      Alert.alert(
+        isCancellationError(e) ? 'Share Canceled' : 'Image Share Failed',
+        isCancellationError(e)
+          ? 'The share sheet was closed before the image was shared.'
+          : 'The image could not be prepared as a readable local file.',
+      );
     } finally {
-      setIsProcessing(false);
+      endOperation();
     }
   };
 
@@ -231,6 +412,11 @@ export default function PreviewScreen() {
               backgroundColor={
                 bgColor === 'Blue' ? '#eff6ff' : bgColor === 'Red' ? '#fef2f2' : '#f3f4f6'
               }
+              photoText={SharedState.photoText}
+              textFont={SharedState.textFont}
+              textSize={SharedState.textSize}
+              textColor={SharedState.textColor}
+              textBackground={SharedState.textBackground}
             />
           ) : (
             <View
@@ -288,6 +474,11 @@ export default function PreviewScreen() {
                 bgColor === 'Blue' ? '#eff6ff' : bgColor === 'Red' ? '#fef2f2' : '#f3f4f6'
               }
               fixedWidth={plan.paperWidth * 10}
+              photoText={SharedState.photoText}
+              textFont={SharedState.textFont}
+              textSize={SharedState.textSize}
+              textColor={SharedState.textColor}
+              textBackground={SharedState.textBackground}
             />
           )}
         </View>
@@ -321,6 +512,7 @@ export default function PreviewScreen() {
                 borderBottomColor: '#f3f4f6',
               }}
               onPress={handleSaveToGallery}
+              disabled={isProcessing}
             >
               <Ionicons
                 name="image-outline"
@@ -340,6 +532,7 @@ export default function PreviewScreen() {
                 borderBottomColor: '#f3f4f6',
               }}
               onPress={handleExportPDF}
+              disabled={isProcessing}
             >
               <Ionicons
                 name="document-text-outline"
@@ -359,6 +552,7 @@ export default function PreviewScreen() {
                 borderBottomColor: '#f3f4f6',
               }}
               onPress={handleShareImage}
+              disabled={isProcessing}
             >
               <Ionicons
                 name="share-social-outline"
@@ -378,6 +572,7 @@ export default function PreviewScreen() {
                 borderRadius: 12,
               }}
               onPress={() => setExportModalVisible(false)}
+              disabled={isProcessing}
             >
               <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151' }}>Cancel</Text>
             </TouchableOpacity>

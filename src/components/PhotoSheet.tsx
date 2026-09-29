@@ -1,4 +1,4 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import type { LayoutSlot } from '../database/queries';
 
 export type PhotoSheetPlan = {
@@ -21,6 +21,11 @@ type PhotoSheetProps = {
   backgroundColor: string;
   maxCopies?: number;
   fixedWidth?: number;
+  photoText?: string;
+  textFont?: string;
+  textSize?: number;
+  textColor?: string;
+  textBackground?: string | null;
 };
 
 export function PhotoSheet({
@@ -29,6 +34,11 @@ export function PhotoSheet({
   backgroundColor,
   maxCopies = plan.copies,
   fixedWidth,
+  photoText,
+  textFont = 'system',
+  textSize = 20,
+  textColor = '#111827',
+  textBackground = null,
 }: PhotoSheetProps) {
   const effectiveMaxCopies = Math.max(1, maxCopies);
   const slots = (
@@ -45,6 +55,8 @@ export function PhotoSheet({
           (plan.photoHeight + plan.gap),
     }))
   ).slice(0, effectiveMaxCopies);
+
+  const hasText = !!photoText?.trim();
 
   return (
     <View
@@ -76,17 +88,49 @@ export function PhotoSheet({
               borderWidth: 1,
               borderColor: '#d1d5db',
               overflow: 'hidden',
+              flexDirection: 'column',
             }}
           >
-            {imageUri ? (
-              <Image
-                source={{ uri: imageUri }}
-                style={styles.photo}
-                resizeMode="cover"
-                fadeDuration={0}
-              />
-            ) : (
-              <View style={styles.placeholderPhoto} />
+            <View style={{ flex: 1, width: '100%', overflow: 'hidden' }}>
+              {imageUri ? (
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                  fadeDuration={0}
+                />
+              ) : (
+                <View style={styles.placeholderPhoto} />
+              )}
+            </View>
+            {hasText && (
+              <View
+                style={{
+                  width: '100%',
+                  paddingVertical: 2,
+                  paddingHorizontal: 1,
+                  backgroundColor: textBackground ?? '#ffffff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderTopWidth: 0.5,
+                  borderTopColor: '#e5e7eb',
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.5}
+                  style={{
+                    color: textColor,
+                    fontSize: Math.max(8, Math.min(textSize * 0.45, 14)),
+                    fontFamily: textFont === 'system' ? undefined : textFont,
+                    fontWeight: '600',
+                    textAlign: 'center',
+                  }}
+                >
+                  {photoText}
+                </Text>
+              </View>
             )}
           </View>
         );

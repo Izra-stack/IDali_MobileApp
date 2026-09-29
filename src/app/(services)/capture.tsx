@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, CameraType, FlashMode, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
-import { persistSharedState, SharedState } from '../../SharedState';
+import { startNewSession, SharedState } from '../../SharedState';
 import styles from '../../styles/services/capture.styles';
 
 export default function CaptureScreen() {
@@ -28,7 +28,7 @@ export default function CaptureScreen() {
   const handleCapture = async () => {
     try {
       const photo = await cameraRef.current?.takePictureAsync();
-      if (photo?.uri) { SharedState.imageUri = photo.uri; await persistSharedState(); router.push('/(services)/editor'); }
+      if (photo?.uri) { await startNewSession(photo.uri); router.push('/(services)/editor'); }
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : '';
       if (message.includes('flash') || message.includes('torch')) setFlashSupported(false);

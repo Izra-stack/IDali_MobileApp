@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -38,9 +38,11 @@ export default function HistoryScreen() {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    loadLayouts();
-  }, [db]);
+  useFocusEffect(
+    useCallback(() => {
+      loadLayouts();
+    }, [loadLayouts])
+  );
 
   // Event handler: confirm and delete one saved layout.
   const removeLayout = (id: number) => {

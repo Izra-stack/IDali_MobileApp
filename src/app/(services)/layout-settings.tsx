@@ -452,6 +452,11 @@ export default function LayoutSettingsScreen() {
               maxCopies={
                 selectedPackage.mixed ? layoutPlan.copies : numberOfCopies
               }
+              photoText={SharedState.photoText}
+              textFont={SharedState.textFont}
+              textSize={SharedState.textSize}
+              textColor={SharedState.textColor}
+              textBackground={SharedState.textBackground}
             />
 
             <Text style={styles.previewCaption}>

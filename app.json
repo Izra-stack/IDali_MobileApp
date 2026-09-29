@@ -37,7 +37,15 @@
       ],
       "expo-sqlite",
       "expo-sharing",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow IDali to save exported layouts to your photo gallery.",
+          "savePhotosPermission": "Allow IDali to save exported layouts to your photo gallery.",
+          "granularPermissions": ["photo"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

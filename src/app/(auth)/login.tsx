@@ -262,11 +262,14 @@ export default function LoginScreen() {
               />
               <TouchableOpacity
                 onPress={() => setShowPassword((value) => !value)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
               >
                 <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
                   size={20}
-                  color="#9ca3af"
+                  color={showPassword ? "#2563eb" : "#9ca3af"}
                   style={styles.inputIcon}
                 />
               </TouchableOpacity>

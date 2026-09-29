@@ -163,50 +163,7 @@ export default function SignupScreen() {
       setSocialLoading(false);
     }
   };
-  const field = (
-    label: string,
-    value: string,
-    onChangeText: (value: string) => void,
-    errorKey: keyof FieldErrors,
-    placeholder: string,
-    isPasswordField = false,
-    isPasswordVisible = false,
-    onTogglePassword?: () => void,
-  ) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View
-        style={[
-          styles.inputWrapper,
-          errors[errorKey] && styles.inputWrapperError,
-        ]}
-      >
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={isPasswordField && !isPasswordVisible}
-          autoCapitalize={errorKey === "email" ? "none" : "words"}
-          autoCorrect={false}
-          keyboardType={errorKey === "email" ? "email-address" : "default"}
-        />
-        {isPasswordField && (
-          <TouchableOpacity onPress={onTogglePassword}>
-            <Ionicons
-              name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
-              size={20}
-              color="#9ca3af"
-              style={styles.inputIcon}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-      {!!errors[errorKey] && (
-        <Text style={styles.errorText}>{errors[errorKey]}</Text>
-      )}
-    </View>
-  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -229,34 +186,122 @@ export default function SignupScreen() {
           <Text style={styles.subtitle}>
             Use your email to create one secure IDali account
           </Text>
-          {field("Full Name", fullName, setFullName, "fullName", "John Doe")}
-          {field(
-            "Email Address",
-            email,
-            setEmail,
-            "email",
-            "johndoe@email.com",
-          )}
-          {field(
-            "Password",
-            password,
-            setPassword,
-            "password",
-            "At least 8 characters",
-            true,
-            showPassword,
-            () => setShowPassword((v) => !v),
-          )}
-          {field(
-            "Confirm Password",
-            confirmPassword,
-            setConfirmPassword,
-            "confirmPassword",
-            "Re-enter your password",
-            true,
-            showConfirmPassword,
-            () => setShowConfirmPassword((v) => !v),
-          )}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Full Name</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.fullName && styles.inputWrapperError,
+              ]}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="John Doe"
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+            </View>
+            {!!errors.fullName && (
+              <Text style={styles.errorText}>{errors.fullName}</Text>
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.email && styles.inputWrapperError,
+              ]}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="johndoe@email.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            {!!errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.password && styles.inputWrapperError,
+              ]}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="At least 8 characters"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((prev) => !prev)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color={showPassword ? "#2563eb" : "#9ca3af"}
+                  style={styles.inputIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {!!errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Confirm Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.confirmPassword && styles.inputWrapperError,
+              ]}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="Re-enter your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword((prev) => !prev)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color={showConfirmPassword ? "#2563eb" : "#9ca3af"}
+                  style={styles.inputIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {!!errors.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
+          </View>
           <Text style={styles.passwordHint}>
             Password must contain at least 8 characters, one letter, and one
             number.

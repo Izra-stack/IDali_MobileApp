@@ -1,9 +1,9 @@
-﻿import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { persistSharedState, SharedState } from '../../SharedState';
+import { startNewSession, SharedState } from '../../SharedState';
 import styles from '../../styles/tabs/edit.styles';
 
 // Screen: choose an existing image before opening the editor.
@@ -19,8 +19,7 @@ export default function EditTabScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      SharedState.imageUri = result.assets[0].uri;
-      await persistSharedState();
+      await startNewSession(result.assets[0].uri);
       router.push('/(services)/editor');
     }
   };
