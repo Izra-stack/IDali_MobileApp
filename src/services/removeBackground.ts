@@ -197,6 +197,8 @@ export async function removeBackground(imageUri: string): Promise<string> {
     // Fall through to direct client calls if server is unreachable
   }
 
+  let lastErrorMessage = "";
+
   // Strategy 2: Direct API fallback from mobile client
   const base64Data = await sourceFile.base64();
 
@@ -204,8 +206,9 @@ export async function removeBackground(imageUri: string): Promise<string> {
   if (removeBgKey) {
     try {
       return await removeWithRemoveBgDirect(base64Data, removeBgKey);
-    } catch {
-      // Try backup
+    } catch (err) {
+      lastErrorMessage = err instanceof Error ? err.message : String(err);
+      console.warn("Direct remove.bg call failed:", lastErrorMessage);
     }
   }
 
@@ -218,10 +221,15 @@ export async function removeBackground(imageUri: string): Promise<string> {
         upload.name,
         magicHourKey,
       );
-    } catch {
-      // Fall through
+    } catch (err) {
+      lastErrorMessage = err instanceof Error ? err.message : String(err);
+      console.warn("Direct Magic Hour call failed:", lastErrorMessage);
     }
   }
 
-  throw new Error(DEFAULT_ERROR_MESSAGE);
+  if (lastErrorMessage) {
+    throw new Error(`Background removal failed: ${lastErrorMessage}`);
+  }
+
+  throw new Error("No valid API key found. Please configure EXPO_PUBLIC_REMOVE_BG_API_KEY or EXPO_PUBLIC_MAGIC_HOUR_API_KEY in your .env file.");
 }

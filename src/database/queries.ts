@@ -10,6 +10,8 @@ export type SavedLayout = {
   background_color: string;
   layout_uri: string | null;
   package_id: string | null;
+  cloudinary_url?: string | null;
+  cloudinary_public_id?: string | null;
   created_at: string;
 };
 
@@ -20,15 +22,17 @@ export async function saveLayout(
 ) {
   const result = await db.runAsync(
     `INSERT INTO layouts
-      (user_id, photo_uri, id_size, paper_size, background_color, layout_uri, package_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (user_id, photo_uri, id_size, paper_size, background_color, layout_uri, package_id, cloudinary_url, cloudinary_public_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     layout.user_id,
     layout.photo_uri,
     layout.id_size,
     layout.paper_size,
     layout.background_color,
     layout.layout_uri,
-    layout.package_id,
+    layout.package_id ?? null,
+    layout.cloudinary_url ?? null,
+    layout.cloudinary_public_id ?? null,
   );
   return result.lastInsertRowId;
 }
@@ -44,6 +48,23 @@ export function getLayouts(db: SQLiteDatabase, userId: string) {
 // Function: delete only the requested user's layout.
 export function deleteLayout(db: SQLiteDatabase, id: number, userId: string) {
   return db.runAsync('DELETE FROM layouts WHERE id = ? AND user_id = ?', id, userId);
+}
+
+// Function: update Cloudinary metadata for a saved layout.
+export function updateLayoutCloudinaryData(
+  db: SQLiteDatabase,
+  id: number,
+  userId: string,
+  cloudinaryUrl: string,
+  cloudinaryPublicId: string,
+) {
+  return db.runAsync(
+    'UPDATE layouts SET cloudinary_url = ?, cloudinary_public_id = ? WHERE id = ? AND user_id = ?',
+    cloudinaryUrl,
+    cloudinaryPublicId,
+    id,
+    userId,
+  );
 }
 
 // Common ID and passport standards. Dimensions are kept in millimetres.
