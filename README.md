@@ -1,6 +1,6 @@
 # IDali
 
-**IDali** is a mobile-based ID photo formatting, editing, and layout system built with **React Native and Expo**.
+**IDali** is a mobile-based ID photo formatting, editing, and layout my first mobile.
 
 It helps users prepare ID photos in one application by allowing them to capture or upload a photo, edit it, choose an ID size and paper size, adjust the background, and automatically generate a printable layout.
 
