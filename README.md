@@ -44,6 +44,3 @@ IDali aims to make ID photo preparation easier by combining:
 
 into one simple mobile application.
 
-## Status
-
- **Currently in development**
