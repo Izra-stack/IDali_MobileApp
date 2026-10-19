@@ -42,5 +42,3 @@ IDali aims to make ID photo preparation easier by combining:
 
 **Capture → Edit → Format → Arrange → Preview → Save → Export**
 
-into one simple mobile application.
-
