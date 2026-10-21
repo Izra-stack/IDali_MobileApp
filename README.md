@@ -36,9 +36,4 @@ It helps users prepare ID photos in one application by allowing them to capture 
 10. **Save/Export** – User saves, exports, or downloads the final layout.
 11. **History** – Previously created layouts can be accessed again.
 
-## Project Goal
-
-IDali aims to make ID photo preparation easier by combining:
-
-**Capture → Edit → Format → Arrange → Preview → Save → Export**
 
