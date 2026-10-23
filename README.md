@@ -4,6 +4,7 @@
 
 It helps users prepare ID photos in one application by allowing them to capture or upload a photo, edit it, choose an ID size and paper size, adjust the background, and automatically generate a printable layout.
 
+
 ## Features
 
 * User Registration & Login
