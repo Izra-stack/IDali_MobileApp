@@ -5,6 +5,7 @@
 It helps users prepare ID photos in one application by allowing them to capture or upload a photo, edit it, choose an ID size and paper size, adjust the background, and automatically generate a printable layout.
 
 
+
 ## Features
 
 * User Registration & Login
@@ -23,6 +24,7 @@ It helps users prepare ID photos in one application by allowing them to capture 
 * Offline Local Storage
 
 
+
 ## How It Works
 
 1. **Login/Register** – User creates an account or logs in.
@@ -36,5 +38,3 @@ It helps users prepare ID photos in one application by allowing them to capture 
 9. **Preview** – User checks the generated layout.
 10. **Save/Export** – User saves, exports, or downloads the final layout.
 11. **History** – Previously created layouts can be accessed again.
-
-
