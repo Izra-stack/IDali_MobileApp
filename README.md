@@ -27,6 +27,8 @@ It helps users prepare ID photos in one application by allowing them to capture 
 
 ## How It Works
 
+
+
 1. **Login/Register** – User creates an account or logs in.
 2. **Dashboard** – User accesses the main features.
 3. **Capture/Upload** – User takes a photo or selects one from the device.
