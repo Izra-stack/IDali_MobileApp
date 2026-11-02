@@ -25,6 +25,7 @@ It helps users prepare ID photos in one application by allowing them to capture 
 
 
 
+
 ## How It Works
 
 
