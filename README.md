@@ -41,3 +41,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 9. **Preview** – User checks the generated layout.
 10. **Save/Export** – User saves, exports, or downloads the final layout.
 11. **History** – Previously created layouts can be accessed again.
+
+
+
