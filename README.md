@@ -24,11 +24,7 @@ It helps users prepare ID photos in one application by allowing them to capture 
 * Offline Local Storage
 
 
-
-
 ## How It Works
-
-
 
 1. **Login/Register** – User creates an account or logs in.
 2. **Dashboard** – User accesses the main features.
