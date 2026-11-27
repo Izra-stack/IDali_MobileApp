@@ -22,7 +22,6 @@ It helps users prepare ID photos in one application by allowing them to capture 
 * Layout History
 * Offline Local Storage
 
-
 ## How It Works
 
 1. **Login/Register** – User creates an account or logs in.
